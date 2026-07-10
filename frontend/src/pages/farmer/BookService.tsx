@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Tractor, Droplets, Combine, Sprout, Truck, Sparkles, MapPin, Calendar, CreditCard, User } from "lucide-react";
+import { Tractor, Droplets, Combine, Sprout, Truck, Sparkles, MapPin, Calendar, CreditCard, User, CheckCircle } from "lucide-react";
 import { KSCard, KSButton, KSModal } from "../../components/ui";
+import { APIProvider, Map, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
 import API from "../../services/api";
+
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 
 interface Service {
   id: number;
@@ -213,32 +216,52 @@ const BookService = () => {
                         setFarmLat(pos.coords.latitude);
                         setFarmLng(pos.coords.longitude);
                         setLocating(false);
-                        alert("Farm location captured successfully! 📍");
                       },
-                      (err) => {
+                      () => {
                         setLocating(false);
                         alert("Could not get location. Please ensure location services are enabled.");
                       }
                     );
                   }}
                   disabled={locating}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-xl transition"
                 >
-                  <MapPin size={12} /> {locating ? "Locating..." : "Pinpoint Current Location"}
+                  <MapPin size={12} /> {locating ? "Locating..." : farmLat ? "Re-pinpoint Location" : "📍 Pinpoint My Location"}
                 </button>
               </div>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Village name, Mandi road, Landmark description..."
-                rows={3}
+                rows={2}
                 className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition"
                 required
               />
+
+              {/* Google Maps Mini Preview */}
               {farmLat && farmLng && (
-                <p className="text-xs text-green-600 mt-2 font-semibold">
-                  ✓ Exact farm coordinates attached: {farmLat.toFixed(5)}, {farmLng.toFixed(5)}
-                </p>
+                <div className="mt-3 rounded-2xl overflow-hidden border-2 border-green-200 shadow-md" style={{ height: "200px" }}>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border-b border-green-100">
+                    <CheckCircle size={14} className="text-green-600" />
+                    <span className="text-xs font-bold text-green-700">
+                      Farm Location Pinned: {farmLat.toFixed(5)}, {farmLng.toFixed(5)}
+                    </span>
+                  </div>
+                  <APIProvider apiKey={GOOGLE_MAPS_KEY}>
+                    <Map
+                      defaultCenter={{ lat: farmLat, lng: farmLng }}
+                      defaultZoom={15}
+                      mapId="kisanseeva-pin-preview"
+                      gestureHandling="none"
+                      disableDefaultUI={true}
+                      style={{ width: "100%", height: "155px" }}
+                    >
+                      <AdvancedMarker position={{ lat: farmLat, lng: farmLng }}>
+                        <Pin background="#16a34a" borderColor="#15803d" glyphColor="#fff" glyph="🌾" scale={1.2} />
+                      </AdvancedMarker>
+                    </Map>
+                  </APIProvider>
+                </div>
               )}
             </div>
           </KSCard>
