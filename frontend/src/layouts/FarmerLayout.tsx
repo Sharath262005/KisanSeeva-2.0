@@ -1,0 +1,111 @@
+import { Link, NavLink, useNavigate, Outlet } from "react-router-dom";
+import { LayoutDashboard, CalendarRange, User, LogOut, Bell, Menu, Tractor, Sprout } from "lucide-react";
+import { useState } from "react";
+import { KSButton } from "../components/ui";
+
+const FarmerLayout = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
+
+  const menuItems = [
+    { name: "Dashboard", path: "/farmer", icon: <LayoutDashboard size={20} /> },
+    { name: "Book Service", path: "/farmer/book", icon: <Sprout size={20} /> },
+    { name: "My Bookings", path: "/farmer/bookings", icon: <CalendarRange size={20} /> },
+    { name: "My Profile", path: "/farmer/profile", icon: <User size={20} /> },
+  ];
+
+  return (
+    <div className="min-h-screen flex bg-slate-50">
+      {/* Sidebar */}
+      <aside
+        className={`bg-white border-r border-slate-100 flex flex-col justify-between fixed h-full z-40 transition-all duration-300 ${
+          isSidebarOpen ? "w-64" : "w-20"
+        }`}
+      >
+        <div>
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
+            <Tractor className="text-green-700 shrink-0" size={28} />
+            {isSidebarOpen && (
+              <span className="text-xl font-bold text-slate-800 tracking-tight">KisanSeeva</span>
+            )}
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="p-4 space-y-2">
+            {menuItems.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                end={item.path === "/farmer"}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-250 ${
+                    isActive
+                      ? "bg-green-700 text-white font-semibold shadow-md"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  }`
+                }
+              >
+                {item.icon}
+                {isSidebarOpen && <span>{item.name}</span>}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-slate-100">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-4 px-4 py-3 rounded-2xl w-full text-red-600 hover:bg-red-50 transition"
+          >
+            <LogOut size={20} />
+            {isSidebarOpen && <span className="font-semibold">Logout</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Wrapper */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? "pl-64" : "pl-20"}`}>
+        {/* Top Navbar */}
+        <header className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-xl hover:bg-slate-100 text-slate-500"
+            >
+              <Menu size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-slate-800">Farmer Portal</h2>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Notification Bell */}
+            <button className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 relative">
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-500 rounded-full"></span>
+            </button>
+
+            {/* Profile Brief */}
+            <div className="flex items-center gap-3 border-l border-slate-100 pl-4">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-700">
+                RK
+              </div>
+              <div className="hidden md:block">
+                <p className="text-sm font-semibold text-slate-800">Ramesh Kumar</p>
+                <p className="text-xs text-slate-400">Warangal</p>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Content Outlet */}
+        <main className="p-6 md:p-8 flex-1">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default FarmerLayout;
