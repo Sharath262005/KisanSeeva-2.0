@@ -52,20 +52,19 @@ function WeatherWidget() {
           const weatherData = await weatherRes.json();
           setWeather(weatherData.current_weather);
 
-          // Reverse Geocoding (using a free API like OpenStreetMap Nominatim)
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          );
-          if (geoRes.ok) {
-            const geoData = await geoRes.json();
-            const city =
-              geoData.address.city ||
-              geoData.address.town ||
-              geoData.address.village ||
-              geoData.address.county ||
-              "Unknown Location";
-            setLocationName(city);
-          } else {
+          // Reverse Geocoding (using BigDataCloud free client API)
+          try {
+            const geoRes = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              const city = geoData.city || geoData.locality || "Current Location";
+              setLocationName(city);
+            } else {
+              setLocationName("Current Location");
+            }
+          } catch (e) {
             setLocationName("Current Location");
           }
         } catch (err: any) {
