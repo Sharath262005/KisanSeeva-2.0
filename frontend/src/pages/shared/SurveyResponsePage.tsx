@@ -14,6 +14,7 @@ interface Survey {
   my_suggestion: number | null;
   my_comment: string | null;
   total_responses: number;
+  avg_price?: number;
 }
 
 export default function SurveyResponsePage() {

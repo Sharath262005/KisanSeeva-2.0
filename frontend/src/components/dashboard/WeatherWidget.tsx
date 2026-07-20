@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Cloud, CloudRain, Sun, Wind, MapPin, Loader2, AlertCircle } from "lucide-react";
 
 interface WeatherData {
@@ -7,7 +7,7 @@ interface WeatherData {
   weathercode: number;
 }
 
-const weatherCodeMap: Record<number, { text: string; icon: JSX.Element }> = {
+const weatherCodeMap: Record<number, { text: string; icon: React.ReactNode }> = {
   0: { text: "Clear sky", icon: <Sun className="text-yellow-500" size={32} /> },
   1: { text: "Mainly clear", icon: <Sun className="text-yellow-500" size={32} /> },
   2: { text: "Partly cloudy", icon: <Cloud className="text-slate-400" size={32} /> },

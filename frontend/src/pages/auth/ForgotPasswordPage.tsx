@@ -27,8 +27,8 @@ const ForgotPasswordPage = () => {
     try {
       const res = await forgotPassword(email);
       setSuccess(true);
-      if (res.devResetToken) {
-        setDevToken(res.devResetToken); // For local dev without email configured
+      if ((res as any).devResetToken) {
+        setDevToken((res as any).devResetToken); // For local dev without email configured
       }
     } catch (err: any) {
       setError(err.message || "Failed to send reset link.");

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CreditCard, Smartphone, Check, Loader2, DollarSign, User, ShieldCheck } from "lucide-react";
+import { CreditCard, Smartphone, Check, Loader2, DollarSign, User, ShieldCheck, AlertCircle } from "lucide-react";
 import { KSModal, KSButton } from "../ui";
 import API from "../../services/api";
 
