@@ -2,8 +2,8 @@ const fetch = require("node-fetch");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3";
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = "llama-3.1-8b-instant";
 
 const getSystemPrompt = (userContext, servicesContext) => `You are KisanSeevaBot, a friendly and knowledgeable AI assistant for the KisanSeeva platform — an Indian agricultural services marketplace.
 
@@ -101,37 +101,34 @@ The user is logged in:
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`
+      },
       body: JSON.stringify({
-        model: OLLAMA_MODEL,
+        model: GROQ_MODEL,
         messages: fullMessages,
         stream: false,
       }),
     });
 
-    if (!ollamaRes.ok) {
-      const errText = await ollamaRes.text();
-      console.error("Ollama Error Response:", errText);
+    if (!groqRes.ok) {
+      const errText = await groqRes.text();
+      console.error("Groq Error Response:", errText);
       return res.status(502).json({
-        message: "Ollama service error. Make sure Ollama is running with `ollama serve` and a model is pulled.",
+        message: "AI service error. Please check your API key.",
         error: errText,
       });
     }
 
-    const data = await ollamaRes.json();
-    const reply = data?.message?.content || "Sorry, I could not generate a response.";
+    const data = await groqRes.json();
+    const reply = data?.choices?.[0]?.message?.content || "Sorry, I could not generate a response.";
 
     res.json({ reply });
   } catch (error) {
     console.error("Chat Controller Error:", error.message);
-    if (error.code === "ECONNREFUSED") {
-      return res.status(503).json({
-        message: "Ollama is not running. Please start it with: ollama serve",
-        offline: true,
-      });
-    }
     res.status(500).json({ message: "Server error processing chat request." });
   }
 };
