@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Tractor, CalendarCheck2, CheckCircle2, TrendingUp } from "lucide-react";
+import { Users, Tractor, CalendarCheck2, CheckCircle2, TrendingUp, Sparkles } from "lucide-react";
 import axios from "axios";
 
 function useCountUp(end: number, duration = 2000, decimals = 0, started = false) {
@@ -32,8 +32,8 @@ type StatItem = {
   number: number;
   suffix: string;
   label: string;
-  color: string;
-  bg: string;
+  gradient: string;
+  glow: string;
   trend: string;
   decimals?: number;
 };
@@ -57,28 +57,36 @@ function StatCard({ item, index }: { item: StatItem; index: number }) {
   return (
     <motion.div
       ref={setRef}
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className={`relative p-7 rounded-3xl border ${item.bg} bg-white overflow-hidden group cursor-default`}
+      transition={{ duration: 0.6, delay: index * 0.12 }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="group relative bg-slate-900/60 border border-white/5 hover:border-emerald-500/30 rounded-3xl p-8 overflow-hidden transition-all duration-300 cursor-default"
     >
-      {/* Subtle glow */}
-      <div className={`absolute -top-8 -right-8 w-28 h-28 rounded-full blur-2xl opacity-30 ${item.color.replace("text-", "bg-")}`} />
+      {/* Background glow */}
+      <div className={`absolute -top-10 -right-10 w-36 h-36 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 bg-gradient-to-br ${item.gradient}`} />
 
-      <div className={`inline-flex p-3 rounded-2xl ${item.bg} border ${item.bg.split(" ")[1]} mb-5`}>
-        <Icon size={24} className={item.color} />
+      {/* Icon */}
+      <div className={`relative inline-flex p-4 rounded-2xl bg-gradient-to-br ${item.gradient} shadow-xl ${item.glow} mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+        <Icon size={24} className="text-white" />
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${item.gradient} blur-md -z-10 scale-125 opacity-0 group-hover:opacity-60 transition-opacity`} />
       </div>
 
-      <h3 className="text-4xl font-black text-slate-800 mb-1">
+      {/* Number */}
+      <h3 className="text-5xl font-black text-white mb-2 tracking-tight">
         {count.toFixed(item.decimals ?? 0)}{item.suffix}
       </h3>
-      <p className="text-slate-600 font-semibold mb-3">{item.label}</p>
-      <div className="flex items-center gap-1.5 text-xs font-medium text-green-600">
+      <p className="text-slate-300 font-semibold mb-4 text-base">{item.label}</p>
+
+      {/* Trend */}
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
         <TrendingUp size={12} />
         {item.trend}
       </div>
+
+      {/* Bottom accent line */}
+      <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
     </motion.div>
   );
 }
@@ -90,36 +98,40 @@ function Stats() {
   useEffect(() => {
     axios.get(`http://${window.location.hostname}:5000/api/admin/public-stats`)
       .then((res) => setLiveStats(res.data))
-      .catch(() => {
-        // fallback to placeholder values if API is unreachable
-        setLiveStats({ farmers: 0, providers: 0, bookings: 0, completed: 0 });
-      })
+      .catch(() => setLiveStats({ farmers: 0, providers: 0, bookings: 0, completed: 0 }))
       .finally(() => setLoading(false));
   }, []);
 
   const statsData: StatItem[] = [
-    { icon: Users, number: liveStats.farmers, suffix: "+", label: "Farmers Registered", color: "text-blue-500", bg: "bg-blue-50 border-blue-100", trend: "Active members" },
-    { icon: Tractor, number: liveStats.providers, suffix: "+", label: "Verified Providers", color: "text-green-500", bg: "bg-green-50 border-green-100", trend: "Trusted service providers" },
-    { icon: CalendarCheck2, number: liveStats.bookings, suffix: "+", label: "Total Bookings", color: "text-purple-500", bg: "bg-purple-50 border-purple-100", trend: "All time bookings" },
-    { icon: CheckCircle2, number: liveStats.completed, suffix: "+", label: "Services Completed", color: "text-yellow-500", bg: "bg-yellow-50 border-yellow-100", trend: "Successfully delivered" },
+    { icon: Users, number: liveStats.farmers, suffix: "+", label: "Farmers Registered", gradient: "from-blue-500 to-cyan-400", glow: "shadow-blue-500/30", trend: "Growing community" },
+    { icon: Tractor, number: liveStats.providers, suffix: "+", label: "Verified Providers", gradient: "from-emerald-500 to-green-400", glow: "shadow-emerald-500/30", trend: "Trusted service experts" },
+    { icon: CalendarCheck2, number: liveStats.bookings, suffix: "+", label: "Total Bookings", gradient: "from-violet-500 to-purple-400", glow: "shadow-violet-500/30", trend: "All time bookings" },
+    { icon: CheckCircle2, number: liveStats.completed, suffix: "+", label: "Services Completed", gradient: "from-amber-500 to-yellow-400", glow: "shadow-amber-500/30", trend: "Successfully delivered" },
   ];
 
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="py-28 bg-slate-900 relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(5,150,105,0.06)_0%,_transparent_70%)]" />
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block bg-green-50 text-green-600 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest border border-green-100 mb-4">
-            Trusted Platform
+          <span className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold px-5 py-2.5 rounded-full mb-6 uppercase tracking-widest">
+            <Sparkles size={12} />
+            Live Platform Stats
           </span>
-          <h2 className="text-4xl font-extrabold text-slate-800">
-            Numbers That Tell Our Story
+          <h2 className="text-5xl font-black text-white mb-4">
+            Numbers That Tell{" "}
+            <span className="gradient-text">Our Story</span>
           </h2>
-          <p className="text-slate-500 mt-2 text-base">
+          <div className="section-divider mb-5" />
+          <p className="text-slate-400 text-base">
             Live data — updated in real time as our community grows.
           </p>
         </motion.div>
@@ -127,11 +139,11 @@ function Stats() {
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-7 rounded-3xl border border-slate-100 bg-white animate-pulse">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 mb-5" />
-                <div className="h-10 w-24 bg-slate-100 rounded-xl mb-2" />
-                <div className="h-4 w-32 bg-slate-100 rounded mb-3" />
-                <div className="h-3 w-28 bg-slate-100 rounded" />
+              <div key={i} className="p-8 rounded-3xl border border-white/5 bg-slate-900/60 animate-pulse">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 mb-6" />
+                <div className="h-12 w-24 bg-white/5 rounded-xl mb-3" />
+                <div className="h-4 w-32 bg-white/5 rounded mb-4" />
+                <div className="h-3 w-28 bg-white/5 rounded" />
               </div>
             ))}
           </div>

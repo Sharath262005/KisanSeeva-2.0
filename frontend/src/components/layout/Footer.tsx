@@ -42,18 +42,19 @@ function Footer() {
   const support = ["Help Center", "Farmer Guide", "Provider Guide", "Terms of Service", "Privacy Policy"];
 
   return (
-    <footer className="bg-slate-900 text-white border-t border-slate-800">
+    <footer className="bg-slate-950 text-white border-t border-white/5 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-gradient-to-b from-emerald-500/20 to-transparent" />
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12">
 
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-6 group w-fit">
-              <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-600/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg glow-emerald">
                 <Tractor size={20} className="text-white" />
               </div>
-              <span className="text-2xl font-extrabold tracking-tight">
-                Kisan<span className="text-green-400">Seeva</span>
+              <span className="text-2xl font-black tracking-tight">
+                Kisan<span className="gradient-text">Seeva</span>
               </span>
             </Link>
             <p className="text-slate-400 leading-relaxed text-sm mb-8 max-w-xs">
@@ -84,7 +85,7 @@ function Footer() {
                   key={social.label}
                   href="#"
                   aria-label={social.label}
-                  className="w-9 h-9 bg-slate-800 hover:bg-green-600 border border-slate-700 hover:border-green-600 rounded-xl flex items-center justify-center transition-all duration-200 text-slate-400 hover:text-white"
+                  className="w-9 h-9 bg-white/5 hover:bg-emerald-600 border border-white/10 hover:border-emerald-500 rounded-xl flex items-center justify-center transition-all duration-200 text-slate-400 hover:text-white"
                 >
                   {social.svg}
                 </a>
@@ -98,7 +99,7 @@ function Footer() {
             <ul className="space-y-3">
               {services.map((item) => (
                 <li key={item}>
-                  <a href="#services" className="text-slate-400 hover:text-green-400 transition text-sm">
+                  <a href="#services" className="text-slate-500 hover:text-emerald-400 transition text-sm">
                     {item}
                   </a>
                 </li>
@@ -112,7 +113,7 @@ function Footer() {
             <ul className="space-y-3">
               {company.map((item) => (
                 <li key={item}>
-                  <a href="#" className="text-slate-400 hover:text-green-400 transition text-sm">
+                  <a href="#" className="text-slate-500 hover:text-emerald-400 transition text-sm">
                     {item}
                   </a>
                 </li>
@@ -126,7 +127,7 @@ function Footer() {
             <ul className="space-y-3">
               {support.map((item) => (
                 <li key={item}>
-                  <a href="#" className="text-slate-400 hover:text-green-400 transition text-sm">
+                  <a href="#" className="text-slate-500 hover:text-emerald-400 transition text-sm">
                     {item}
                   </a>
                 </li>
@@ -157,12 +158,12 @@ function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-slate-500 text-sm">
+        <div className="mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-slate-600 text-sm">
             © 2026 KisanSeeva Technologies Pvt. Ltd. All Rights Reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             All systems operational
           </div>
         </div>

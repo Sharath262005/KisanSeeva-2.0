@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Menu, X, Tractor } from "lucide-react";
+import { Menu, X, Tractor, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -20,35 +21,41 @@ function Navbar() {
   ];
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    <motion.nav
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-white/90 backdrop-blur-xl shadow-lg shadow-black/5 border-b border-slate-100"
+          ? "bg-slate-950/90 backdrop-blur-xl shadow-2xl shadow-black/30 border-b border-white/5"
           : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <img 
-            src="/logo.png" 
-            alt="KisanSeeva Logo" 
-            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" 
+          <img
+            src="/logo.png"
+            alt="KisanSeeva Logo"
+            className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
             onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              const fallback = e.currentTarget.nextElementSibling;
+              e.currentTarget.style.display = "none";
+              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
               if (fallback) {
-                fallback.classList.remove('hidden');
-                fallback.classList.add('flex');
+                fallback.style.display = "flex";
               }
             }}
           />
-          <div className="hidden items-center gap-2.5">
-            <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-600/30">
-              <Tractor size={20} className="text-white" />
+          <div
+            style={{ display: "none" }}
+            className="items-center gap-2"
+          >
+            <div className="relative w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg glow-emerald">
+              <Tractor size={18} className="text-white" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-slate-950 animate-pulse" />
             </div>
-            <span className="text-2xl font-extrabold tracking-tight text-slate-800">
-              Kisan<span className="text-green-600">Seeva</span>
+            <span className="text-xl font-black tracking-tight text-white">
+              Kisan<span className="gradient-text">Seeva</span>
             </span>
           </div>
         </Link>
@@ -59,9 +66,10 @@ function Navbar() {
             <a
               key={link.label}
               href={link.href}
-              className="text-slate-600 hover:text-green-700 font-medium text-sm transition-colors duration-200"
+              className="relative text-slate-300 hover:text-emerald-400 font-medium text-sm transition-colors duration-200 group"
             >
               {link.label}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-400 group-hover:w-full transition-all duration-300 rounded-full" />
             </a>
           ))}
         </div>
@@ -70,21 +78,23 @@ function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <Link
             to="/login"
-            className="px-5 py-2.5 text-sm font-semibold text-slate-700 hover:text-green-700 border border-slate-200 hover:border-green-300 rounded-xl transition-all duration-200 bg-white hover:bg-green-50"
+            className="px-5 py-2.5 text-sm font-semibold text-slate-300 hover:text-white border border-white/10 hover:border-white/25 rounded-xl transition-all duration-200 hover:bg-white/5"
           >
             Sign In
           </Link>
           <Link
             to="/register"
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-lg shadow-green-600/25 hover:shadow-green-600/40 transition-all duration-200"
+            className="relative px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-xl shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center gap-1.5 overflow-hidden"
           >
-            Get Started →
+            <span className="absolute inset-0 animate-shimmer" />
+            <Sparkles size={14} />
+            Get Started
           </Link>
         </div>
 
         {/* Mobile Toggle */}
         <button
-          className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition"
+          className="md:hidden p-2 rounded-xl text-slate-300 hover:bg-white/10 transition"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -92,39 +102,46 @@ function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      {menuOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100 shadow-xl">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-3">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-slate-700 hover:text-green-700 font-medium py-2 border-b border-slate-50"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="flex gap-3 mt-3">
-              <Link
-                to="/login"
-                className="flex-1 text-center py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700"
-                onClick={() => setMenuOpen(false)}
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className="flex-1 text-center py-2.5 bg-green-600 rounded-xl text-sm font-semibold text-white"
-                onClick={() => setMenuOpen(false)}
-              >
-                Get Started
-              </Link>
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-slate-950/98 backdrop-blur-xl border-t border-white/5 overflow-hidden"
+          >
+            <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col gap-4">
+              {navLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-slate-300 hover:text-emerald-400 font-medium py-2 border-b border-white/5 transition-colors"
+                >
+                  {link.label}
+                </a>
+              ))}
+              <div className="flex gap-3 mt-2">
+                <Link
+                  to="/login"
+                  className="flex-1 text-center py-3 border border-white/15 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="flex-1 text-center py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl text-sm font-bold text-white shadow-lg shadow-emerald-600/30"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Get Started
+                </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
   );
 }
 
