@@ -33,8 +33,8 @@ export default function SurveyResponsePage() {
     setLoading(true);
     try {
       const [activeRes, closedRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/surveys/user/active", { headers }),
-        axios.get("http://localhost:5000/api/surveys/user/closed", { headers }),
+        axios.get("https://kisanseeva-backend.onrender.com/api/surveys/user/active", { headers }),
+        axios.get("https://kisanseeva-backend.onrender.com/api/surveys/user/closed", { headers }),
       ]);
       setActiveSurveys(activeRes.data.surveys);
       setClosedSurveys(closedRes.data.surveys);
@@ -53,7 +53,7 @@ export default function SurveyResponsePage() {
 
     setSubmitting(surveyId);
     try {
-      await axios.post(`http://localhost:5000/api/surveys/${surveyId}/respond`, {
+      await axios.post(`https://kisanseeva-backend.onrender.com/api/surveys/${surveyId}/respond`, {
         suggested_price: parseFloat(price),
         comment: comments[surveyId] || ""
       }, { headers });

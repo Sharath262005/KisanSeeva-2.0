@@ -88,7 +88,7 @@ const RegisterPage = () => {
       // Use standard fetch or api instance if it supports FormData properly.
       // Assuming api.ts defaults to JSON, we might need a specific config for multipart
       const token = localStorage.getItem("token") || "";
-      const res = await fetch("http://localhost:5000/api/auth/upload-documents", {
+      const res = await fetch("https://kisanseeva-backend.onrender.com/api/auth/upload-documents", {
         method: "POST",
         headers: {
           // Do NOT set Content-Type header manually for FormData

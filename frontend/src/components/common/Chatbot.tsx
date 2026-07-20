@@ -211,7 +211,7 @@ export default function Chatbot() {
       const token = localStorage.getItem("token");
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
-      const res = await axios.post("http://localhost:5000/api/chat", {
+      const res = await axios.post("https://kisanseeva-backend.onrender.com/api/chat", {
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
       }, config);
 

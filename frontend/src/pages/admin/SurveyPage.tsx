@@ -47,7 +47,7 @@ export default function SurveyPage() {
   const fetchSurveys = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:5000/api/surveys", { headers });
+      const res = await axios.get("https://kisanseeva-backend.onrender.com/api/surveys", { headers });
       setSurveys(res.data.surveys);
     } catch { /* empty */ }
     setLoading(false);
@@ -56,7 +56,7 @@ export default function SurveyPage() {
   const fetchDetail = async (id: number) => {
     setDetailLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/surveys/${id}`, { headers });
+      const res = await axios.get(`https://kisanseeva-backend.onrender.com/api/surveys/${id}`, { headers });
       setDetail(res.data);
     } catch { /* empty */ }
     setDetailLoading(false);
@@ -79,7 +79,7 @@ export default function SurveyPage() {
     e.preventDefault();
     setCreating(true);
     try {
-      await axios.post("http://localhost:5000/api/surveys", form, { headers });
+      await axios.post("https://kisanseeva-backend.onrender.com/api/surveys", form, { headers });
       setShowCreate(false);
       setForm({ title: "", service_type: "Tractor", description: "", deadline: "" });
       fetchSurveys();
@@ -94,7 +94,7 @@ export default function SurveyPage() {
   const handleFinalize = async (id: number) => {
     if (!finalizePrice || isNaN(parseFloat(finalizePrice))) return;
     try {
-      await axios.put(`http://localhost:5000/api/surveys/${id}/finalize`, { finalized_price: finalizePrice }, { headers });
+      await axios.put(`https://kisanseeva-backend.onrender.com/api/surveys/${id}/finalize`, { finalized_price: finalizePrice }, { headers });
       setFinalizePrice("");
       fetchSurveys();
       fetchDetail(id);

@@ -96,7 +96,7 @@ function Stats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`http://${window.location.hostname}:5000/api/admin/public-stats`)
+    axios.get(`https://kisanseeva-backend.onrender.com/api/admin/public-stats`)
       .then((res) => setLiveStats(res.data))
       .catch(() => setLiveStats({ farmers: 0, providers: 0, bookings: 0, completed: 0 }))
       .finally(() => setLoading(false));
