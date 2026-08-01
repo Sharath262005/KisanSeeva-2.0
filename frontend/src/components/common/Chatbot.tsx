@@ -438,10 +438,26 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isBotSpeaking, setIsBotSpeaking] = useState(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    return localStorage.getItem("seed_bot_muted") === "true";
+  });
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [botReply, setBotReply] = useState("");
   const [pendingBooking, setPendingBooking] = useState<BookingDetails | null>(null);
   const [bookingStatus, setBookingStatus] = useState<"none" | "submitting" | "success" | "error">("none");
+
+  const toggleMute = () => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      localStorage.setItem("seed_bot_muted", String(next));
+      if (next) {
+        try { window.speechSynthesis?.cancel(); } catch { }
+        if (audioRef.current) audioRef.current.pause();
+        setIsBotSpeaking(false);
+      }
+      return next;
+    });
+  };
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -497,6 +513,11 @@ export default function Chatbot() {
   };
 
   const speak = useCallback((text: string, onDone?: () => void) => {
+    if (isMuted) {
+      setIsBotSpeaking(false);
+      onDone?.();
+      return;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -516,7 +537,7 @@ export default function Chatbot() {
         onDone?.();
       }
     );
-  }, [currentLanguage]);
+  }, [currentLanguage, isMuted]);
 
   const toggleMic = () => {
     if (!SR) { alert("Speech recognition requires Chrome or Edge."); return; }
@@ -727,11 +748,13 @@ export default function Chatbot() {
           </button>
 
           <button
-            onClick={() => { if (audioRef.current) audioRef.current.pause(); window.speechSynthesis.cancel(); setIsBotSpeaking(false); }}
-            className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shadow-lg transition-all cursor-pointer"
-            title="Mute Audio"
+            onClick={toggleMute}
+            className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer ${
+              isMuted ? "bg-red-600/90 text-white border-2 border-red-400" : "bg-white/10 hover:bg-white/20 text-white"
+            }`}
+            title={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
           >
-            <VolumeX size={26} className="text-white" />
+            {isMuted ? <VolumeX size={26} className="text-white" /> : <Volume2 size={26} className="text-white" />}
           </button>
         </div>
 
@@ -829,6 +852,18 @@ export default function Chatbot() {
                 title="Start hands-free voice call"
               >
                 <Phone size={13} className="text-emerald-300 animate-pulse" /> Call
+              </button>
+              <button
+                onClick={toggleMute}
+                className={`p-1.5 rounded-xl transition cursor-pointer flex items-center justify-center ${
+                  isMuted 
+                    ? "bg-red-500/30 text-red-200 border border-red-400/40 hover:bg-red-500/50" 
+                    : "hover:bg-white/10 text-emerald-200 hover:text-white"
+                }`}
+                title={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
+                aria-label={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
+              >
+                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
               <button
                 onClick={clearChat}
