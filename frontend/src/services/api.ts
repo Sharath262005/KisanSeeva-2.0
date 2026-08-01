@@ -39,19 +39,21 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    if (status === 401) {
+    const url = error.config?.url || "";
+
+    // Never auto-redirect for auth endpoints — let the component handle errors
+    const isAuthEndpoint =
+      url.includes("/auth/send-otp") ||
+      url.includes("/auth/verify-otp") ||
+      url.includes("/auth/login") ||
+      url.includes("/auth/register");
+
+    if (status === 401 && !isAuthEndpoint) {
       // Token expired or invalid — force re-login
       localStorage.removeItem("token");
       window.location.href = "/login?reason=session_expired";
-    } else if (status === 403) {
-      // Wrong role token — clear and redirect with message
-      const currentRole = error.config?.url || "";
-      const isBookingRoute = currentRole.includes("/bookings");
-      if (isBookingRoute) {
-        // Let the component handle this with a better UI message
-        // Don't auto-redirect so the user sees the inline error
-      }
     }
+    // 403 is handled inline by components (pending account, wrong role, etc.)
     return Promise.reject(error);
   }
 );

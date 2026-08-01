@@ -106,12 +106,12 @@ function CTA() {
           {/* Already have account */}
           <p className="text-slate-500 text-sm">
             Already have an account?{" "}
-            <button
-              onClick={() => navigate("/login")}
+            <a
+              href="#login-portal"
               className="text-emerald-400 font-semibold hover:text-emerald-300 transition underline underline-offset-4"
             >
               Sign in here
-            </button>
+            </a>
           </p>
         </motion.div>
       </div>

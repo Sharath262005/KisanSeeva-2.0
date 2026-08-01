@@ -54,9 +54,8 @@ const AdminLayout = () => {
     <div className="min-h-screen flex bg-slate-950 text-slate-100">
       {/* Sidebar */}
       <aside
-        className={`bg-slate-900 border-r border-slate-800 flex flex-col justify-between fixed h-full z-40 transition-all duration-300 ${
-          isSidebarOpen ? "w-64" : "w-20"
-        }`}
+        className={`bg-slate-900 border-r border-slate-800 flex flex-col justify-between fixed h-full z-40 transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-20"
+          }`}
       >
         <div>
           {/* Logo */}
@@ -75,10 +74,9 @@ const AdminLayout = () => {
                 to={item.path}
                 end={item.path === "/admin"}
                 className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-250 ${
-                    isActive
-                      ? "bg-red-600 text-white font-semibold shadow-lg shadow-red-600/10"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-250 ${isActive
+                    ? "bg-red-600 text-white font-semibold shadow-lg shadow-red-600/10"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`
                 }
               >
@@ -119,9 +117,9 @@ const AdminLayout = () => {
             {/* Profile Brief */}
             <div className="flex items-center gap-3">
               {user?.documents?.selfie ? (
-                <img 
-                  src={user.documents.selfie} 
-                  alt="Admin Profile" 
+                <img
+                  src={user.documents.selfie}
+                  alt="Admin Profile"
                   className="w-10 h-10 rounded-full object-cover border border-red-500/30"
                 />
               ) : (

@@ -63,7 +63,7 @@ function StatCard({ item, index }: { item: StatItem; index: number }) {
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: index * 0.12 }}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group relative bg-slate-900/60 border border-white/5 hover:border-emerald-500/30 rounded-3xl p-8 overflow-hidden transition-all duration-300 cursor-default"
+      className="group relative bg-slate-900/50 border border-white/5 hover:border-emerald-500/30 rounded-3xl p-6 sm:p-8 overflow-hidden transition-all duration-300 cursor-default flex flex-col items-center text-center"
     >
       {/* Background glow */}
       <div className={`absolute -top-10 -right-10 w-36 h-36 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 bg-gradient-to-br ${item.gradient}`} />
@@ -75,13 +75,13 @@ function StatCard({ item, index }: { item: StatItem; index: number }) {
       </div>
 
       {/* Number */}
-      <h3 className="text-5xl font-black text-white mb-2 tracking-tight">
+      <h3 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tight">
         {count.toFixed(item.decimals ?? 0)}{item.suffix}
       </h3>
       <p className="text-slate-300 font-semibold mb-4 text-base">{item.label}</p>
 
       {/* Trend */}
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+      <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-400">
         <TrendingUp size={12} />
         {item.trend}
       </div>
@@ -140,9 +140,9 @@ function Stats() {
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-8 rounded-3xl border border-white/5 bg-slate-900/60 animate-pulse">
+              <div key={i} className="p-6 sm:p-8 rounded-3xl border border-white/5 bg-slate-900/50 animate-pulse flex flex-col items-center text-center">
                 <div className="w-14 h-14 rounded-2xl bg-white/5 mb-6" />
-                <div className="h-12 w-24 bg-white/5 rounded-xl mb-3" />
+                <div className="h-10 w-24 bg-white/5 rounded-xl mb-3" />
                 <div className="h-4 w-32 bg-white/5 rounded mb-4" />
                 <div className="h-3 w-28 bg-white/5 rounded" />
               </div>

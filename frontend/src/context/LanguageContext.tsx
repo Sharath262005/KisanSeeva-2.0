@@ -10,13 +10,13 @@ export interface LanguageOption {
 }
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { code: "en", name: "English", nativeName: "English", sttCode: "en-IN", flag: "🇬🇧" },
-  { code: "te", name: "Telugu", nativeName: "తెలుగు", sttCode: "te-IN", flag: "🇮🇳" },
-  { code: "hi", name: "Hindi", nativeName: "हिंदी", sttCode: "hi-IN", flag: "🇮🇳" },
-  { code: "ta", name: "Tamil", nativeName: "தமிழ்", sttCode: "ta-IN", flag: "🇮🇳" },
-  { code: "kn", name: "Kannada", nativeName: "ಕನ್ನಡ", sttCode: "kn-IN", flag: "🇮🇳" },
-  { code: "mr", name: "Marathi", nativeName: "మరాఠీ", sttCode: "mr-IN", flag: "🇮🇳" },
-  { code: "bn", name: "Bengali", nativeName: "বাংলা", sttCode: "bn-IN", flag: "🇮🇳" },
+  { code: "en", name: "English",  nativeName: "English",  sttCode: "en-IN", flag: "🇬🇧" },
+  { code: "te", name: "Telugu",   nativeName: "తెలుగు",   sttCode: "te-IN", flag: "🇮🇳" },
+  { code: "hi", name: "Hindi",    nativeName: "हिंदी",    sttCode: "hi-IN", flag: "🇮🇳" },
+  { code: "ta", name: "Tamil",    nativeName: "தமிழ்",    sttCode: "ta-IN", flag: "🇮🇳" },
+  { code: "kn", name: "Kannada",  nativeName: "ಕನ್ನಡ",   sttCode: "kn-IN", flag: "🇮🇳" },
+  { code: "mr", name: "Marathi",  nativeName: "मराठी",    sttCode: "mr-IN", flag: "🇮🇳" },
+  { code: "bn", name: "Bengali",  nativeName: "বাংলা",    sttCode: "bn-IN", flag: "🇧🇩" },
 ];
 
 interface LanguageContextType {

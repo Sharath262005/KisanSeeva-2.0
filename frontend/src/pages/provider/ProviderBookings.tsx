@@ -3,6 +3,7 @@ import { Check, X, Calendar, MapPin, Tractor, Clock, Navigation } from "lucide-r
 import { KSCard, KSBadge, KSButton } from "../../components/ui";
 import LiveTrackingModal from "../../components/dashboard/LiveTrackingModal";
 import PublicProfileModal from "../../components/dashboard/PublicProfileModal";
+import { useLanguage } from "../../context/LanguageContext";
 import API from "../../services/api";
 
 interface Booking {
@@ -26,6 +27,7 @@ interface Booking {
 }
 
 const ProviderBookings = () => {
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -121,8 +123,8 @@ const ProviderBookings = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Manage Bookings</h1>
-          <p className="text-slate-500 mt-1">Accept incoming booking requests, manage active jobs, and complete them.</p>
+          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myBookings")}</h1>
+          <p className="text-slate-500 mt-1">{t("hereIsOverview")}</p>
         </div>
 
         {/* Filter Tabs */}
@@ -135,7 +137,7 @@ const ProviderBookings = () => {
                 filter === item ? "bg-yellow-500 text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              {item}
+              {t(item)}
             </button>
           ))}
         </div>
@@ -143,7 +145,7 @@ const ProviderBookings = () => {
 
       {filteredBookings.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-lg p-12 text-center text-slate-400">
-          No bookings found in this category.
+          {t("noRequestsFound")}
         </div>
       ) : (
         <div className="grid gap-6">
@@ -166,17 +168,17 @@ const ProviderBookings = () => {
                           : "warning"
                       }
                     >
-                      <span className="capitalize">{b.status}</span>
+                      <span>{t(b.status)}</span>
                     </KSBadge>
                   </div>
                   <p className="text-sm text-slate-600">
-                    Farmer: <span className="font-bold text-slate-800">{b.farmer_name}</span> ({b.farmer_phone})
+                    {t("farmer")}: <span className="font-bold text-slate-800">{b.farmer_name}</span> ({b.farmer_phone})
                     {(b.status === 'confirmed' || b.status === 'completed') && (
                       <button
                         onClick={() => setViewProfileId(b.farmer_id)}
                         className="text-xs text-blue-600 underline hover:text-blue-800 font-semibold ml-2"
                       >
-                        View Farmer Profile →
+                        {t("viewProfile")} →
                       </button>
                     )}
                   </p>

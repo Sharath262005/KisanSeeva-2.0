@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { User, Phone, Sprout, ShieldCheck } from "lucide-react";
 import { KSCard, KSButton } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const FarmerProfile = () => {
   const { user, updateUserProfile } = useAuth();
+  const { t } = useLanguage();
   
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -50,8 +52,8 @@ const FarmerProfile = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">My Profile</h1>
-        <p className="text-slate-500 mt-1">Manage your farm profile, land details and credentials.</p>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myProfile")}</h1>
+        <p className="text-slate-500 mt-1">{t("editProfile")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -77,7 +79,7 @@ const FarmerProfile = () => {
             </h3>
             
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("name")}</label>
               <input
                 type="text"
                 value={name}
@@ -88,7 +90,7 @@ const FarmerProfile = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone Number</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("phone")}</label>
               <input
                 type="tel"
                 value={phone}
@@ -121,7 +123,7 @@ const FarmerProfile = () => {
 
         <div className="flex justify-end">
           <KSButton type="submit" disabled={submitting} className="px-8">
-            {submitting ? "Saving..." : "Save Changes"}
+            {submitting ? "Saving..." : t("save")}
           </KSButton>
         </div>
       </form>

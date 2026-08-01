@@ -60,17 +60,16 @@ const ProviderLayout = () => {
     <div className="min-h-screen flex bg-slate-50">
       {/* Sidebar */}
       <aside
-        className={`bg-white border-r border-slate-100 flex flex-col justify-between fixed h-full z-40 transition-all duration-300 ${
-          isSidebarOpen ? "w-64" : "w-20"
-        }`}
+        className={`bg-white border-r border-slate-100 flex flex-col justify-between fixed h-full z-40 transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-20"
+          }`}
       >
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 group">
-            <img 
-              src="/provider-logo.png" 
-              alt="Provider Logo" 
-              className={`object-contain transition-all duration-300 ${isSidebarOpen ? 'w-32 h-auto' : 'w-10 h-10'}`} 
+            <img
+              src="/provider-logo.png"
+              alt="Provider Logo"
+              className={`object-contain transition-all duration-300 ${isSidebarOpen ? 'w-32 h-auto' : 'w-10 h-10'}`}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 const fallback = e.currentTarget.nextElementSibling;
@@ -96,10 +95,9 @@ const ProviderLayout = () => {
                 to={item.path}
                 end={item.path === "/provider"}
                 className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-250 ${
-                    isActive
-                      ? "bg-yellow-500 text-slate-900 font-semibold shadow-md"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                  `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-250 ${isActive
+                    ? "bg-yellow-500 text-slate-900 font-semibold shadow-md"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                   }`
                 }
               >
@@ -145,14 +143,12 @@ const ProviderLayout = () => {
               </span>
               <button
                 onClick={() => setIsOnline(!isOnline)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-                  isOnline ? "bg-green-600" : "bg-slate-300"
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${isOnline ? "bg-green-600" : "bg-slate-300"
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                    isOnline ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${isOnline ? "translate-x-6" : "translate-x-1"
+                    }`}
                 />
               </button>
             </div>
@@ -163,9 +159,9 @@ const ProviderLayout = () => {
             {/* Profile Brief */}
             <Link to="/provider/profile" className="flex items-center gap-3 border-l border-slate-100 pl-4 hover:opacity-80 transition">
               {user?.documents?.selfie ? (
-                <img 
-                  src={user.documents.selfie} 
-                  alt="Profile" 
+                <img
+                  src={user.documents.selfie}
+                  alt="Profile"
                   className="w-10 h-10 rounded-full object-cover border border-yellow-250"
                 />
               ) : (

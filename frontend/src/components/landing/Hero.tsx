@@ -125,11 +125,14 @@ function Hero() {
             className="relative lg:block hidden"
           >
             {/* Main Image Card */}
-            <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(5,150,105,0.2)]">
+            <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(5,150,105,0.2)] bg-gradient-to-br from-emerald-900 via-slate-900 to-green-950">
               <img
                 src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80"
                 alt="Farmer using KisanSeeva"
                 className="w-full h-[520px] object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
               {/* Glowing border overlay */}

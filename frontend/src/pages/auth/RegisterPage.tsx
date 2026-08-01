@@ -1,15 +1,44 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../layouts/AuthLayout";
 import { KSButton } from "../../components/ui";
 import {
   Sprout, Tractor, AlertCircle, CheckCircle2, Eye, EyeOff,
-  Camera, RefreshCw, MapPin, Loader2
+  Camera, RefreshCw, MapPin, Loader2, ArrowLeft
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
 
 type Role = "farmer" | "provider";
+
+const ROLE_META = {
+  farmer: {
+    label: "Farmer",
+    emoji: "🌾",
+    icon: Sprout,
+    headerBg: "bg-gradient-to-br from-emerald-600 to-green-700",
+    accent: "text-emerald-700",
+    accentBg: "bg-emerald-50",
+    accentBorder: "border-emerald-100",
+    stepActive: "bg-green-500 border-green-500",
+    stepCurrent: "border-green-500 text-green-600",
+    stepBar: "bg-green-400",
+    ringClass: "focus:ring-2 focus:ring-green-400/30 focus:border-green-400",
+  },
+  provider: {
+    label: "Provider",
+    emoji: "🚜",
+    icon: Tractor,
+    headerBg: "bg-gradient-to-br from-amber-500 to-orange-600",
+    accent: "text-amber-700",
+    accentBg: "bg-amber-50",
+    accentBorder: "border-amber-100",
+    stepActive: "bg-amber-500 border-amber-500",
+    stepCurrent: "border-amber-500 text-amber-600",
+    stepBar: "bg-amber-400",
+    ringClass: "focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400",
+  },
+} as const;
 
 /* ────────── Selfie Camera Component ────────── */
 interface SelfieCameraProps {
@@ -92,7 +121,19 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({ onCapture }) => {
 
 /* ────────── Main RegisterPage ────────── */
 const RegisterPage = () => {
-  const [role, setRole] = useState<Role>("farmer");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { register: authRegister } = useAuth();
+
+  // Read role from URL param, default to farmer
+  const roleParam = searchParams.get("role") as Role | null;
+  const initialRole: Role = roleParam === "provider" ? "provider" : "farmer";
+
+  // Role is fixed from URL — no tab switching
+  const role: Role = initialRole;
+  const meta = ROLE_META[role];
+  const RoleIcon = meta.icon;
+
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -106,7 +147,6 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Step 2 — Role-specific structured info
   // Farmer fields
   const [farmerVillage, setFarmerVillage] = useState("");
   const [farmerDistrict, setFarmerDistrict] = useState("");
@@ -122,7 +162,7 @@ const RegisterPage = () => {
   const [providerDistrict, setProviderDistrict] = useState("");
   const [providerState, setProviderState] = useState("");
 
-  // Location coords (auto-detected)
+  // Location coords
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
 
@@ -131,20 +171,16 @@ const RegisterPage = () => {
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
   const [drivingLicenseFile, setDrivingLicenseFile] = useState<File | null>(null);
-  // Increment to force SelfieCamera full remount on retake
   const [cameraKey, setCameraKey] = useState(0);
 
-  const navigate = useNavigate();
-  const { register: authRegister } = useAuth();
-
   const inputClass =
-    "w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-400/30 focus:border-green-400 transition text-slate-800 placeholder:text-slate-400 text-sm";
+    `w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none ${meta.ringClass} transition text-slate-800 placeholder:text-slate-400 text-sm`;
 
   /* ── Step 1 validation ── */
   const handleNext = () => {
     if (!name.trim()) { setError("Please enter your full name"); return; }
     if (!/^[6-9]\d{9}$/.test(phone.trim())) { setError("Please enter a valid 10-digit Indian phone number"); return; }
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email address"); return; }
+    if (email.trim() && !/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email address"); return; }
     if (!password || password.length < 6) { setError("Password must be at least 6 characters"); return; }
     setError("");
     setStep(2);
@@ -166,7 +202,7 @@ const RegisterPage = () => {
     );
   };
 
-  /* ── Build extraInfo string from structured fields ── */
+  /* ── Build extraInfo string ── */
   const buildExtraInfo = () => {
     if (role === "farmer") {
       return `Village: ${farmerVillage}, District: ${farmerDistrict}, State: ${farmerState}, Land: ${farmerLandSize} acres, Crops: ${farmerCrops}`;
@@ -175,7 +211,7 @@ const RegisterPage = () => {
     }
   };
 
-  /* ── Step 2 validation ── */
+  /* ── Step 2 validation & submit ── */
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -195,11 +231,7 @@ const RegisterPage = () => {
       if (!providerState.trim()) { setError("State is required"); return; }
     }
 
-    // ✅ If user was already created (came back from Step 3), skip re-registration
-    if (userId) {
-      setStep(3);
-      return;
-    }
+    if (userId) { setStep(3); return; }
 
     const addressCity = role === "farmer" ? farmerDistrict : providerDistrict;
     const addressState = role === "farmer" ? farmerState : providerState;
@@ -208,7 +240,7 @@ const RegisterPage = () => {
     try {
       const { user } = await authRegister({
         name: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: email.trim() ? email.trim().toLowerCase() : undefined,
         phone: phone.trim(),
         role,
         password,
@@ -276,32 +308,63 @@ const RegisterPage = () => {
     "Other",
   ];
 
+  const stepLabels = ["Basic Info", "Details", "Verify"];
+
   return (
     <AuthLayout
       title="Create Account"
       subtitle="Join the KisanSeeva network — India's agricultural services platform"
     >
+      {/* Back to Home */}
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-700 transition mb-4"
+      >
+        <ArrowLeft size={14} /> Back to Home
+      </button>
+
+      {/* Role Identity Header */}
+      <div className={`flex items-center gap-3 rounded-2xl p-4 ${meta.headerBg} text-white shadow-lg mb-6`}>
+        <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+          <RoleIcon size={22} />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-white/70">Registering as</p>
+          <p className="text-lg font-black">{meta.emoji} {meta.label} Account</p>
+        </div>
+        <div className="ml-auto">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="text-xs font-semibold text-white/70 hover:text-white underline transition"
+          >
+            Change role
+          </button>
+        </div>
+      </div>
+
       {/* Step Indicator */}
       <div className="flex items-center gap-3 mb-8">
         {[1, 2, 3].map((s) => (
           <React.Fragment key={s}>
-            <div className={`flex items-center gap-2 ${s <= step ? "text-green-600" : "text-slate-400"}`}>
+            <div className={`flex items-center gap-2 ${s <= step ? meta.accent : "text-slate-400"}`}>
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
                   s < step
-                    ? "bg-green-500 border-green-500 text-white"
+                    ? `${meta.stepActive} text-white`
                     : s === step
-                    ? "border-green-500 text-green-600"
+                    ? meta.stepCurrent
                     : "border-slate-300 text-slate-400"
                 }`}
               >
                 {s < step ? <CheckCircle2 size={16} /> : s}
               </div>
               <span className="text-xs font-semibold hidden sm:block">
-                {s === 1 ? "Basic Info" : s === 2 ? "Details" : "Verify"}
+                {stepLabels[s - 1]}
               </span>
             </div>
-            {s < 3 && <div className={`flex-1 h-0.5 rounded-full transition-all ${step > s ? "bg-green-400" : "bg-slate-200"}`} />}
+            {s < 3 && <div className={`flex-1 h-0.5 rounded-full transition-all ${step > s ? meta.stepBar : "bg-slate-200"}`} />}
           </React.Fragment>
         ))}
       </div>
@@ -317,39 +380,22 @@ const RegisterPage = () => {
       {/* ────────── STEP 1: Basic Info ────────── */}
       {step === 1 && (
         <div className="space-y-5">
-          {/* Role Selection */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">Register As</label>
-            <div className="grid grid-cols-2 gap-3">
-              {(["farmer", "provider"] as Role[]).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 ${
-                    role === r
-                      ? "border-green-400 bg-green-50 text-green-700 font-bold shadow-sm shadow-green-100"
-                      : "border-slate-200 hover:border-slate-300 text-slate-500"
-                  }`}
-                >
-                  {r === "farmer" ? <Sprout className="mb-2" size={26} /> : <Tractor className="mb-2" size={26} />}
-                  <span className="text-sm capitalize">{r}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name *</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ramesh Kumar" className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone Number * <span className="text-slate-400 font-normal">(10 digits)</span></label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Phone Number * <span className="text-slate-400 font-normal">(10 digits — used to login)</span>
+            </label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98765 43210" maxLength={10} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email Address *</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Email Address <span className="text-slate-400 font-normal text-xs">(Optional)</span>
+            </label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com (optional)" className={inputClass} />
+            <p className="text-xs text-slate-400 mt-1">Used for password reset and notifications. You can skip this.</p>
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password *</label>
@@ -372,12 +418,12 @@ const RegisterPage = () => {
         </div>
       )}
 
-      {/* ────────── STEP 2: Structured Details ────────── */}
+      {/* ────────── STEP 2: Role-specific Details ────────── */}
       {step === 2 && (
         <form onSubmit={handleStep2Submit} className="space-y-5">
-          <div className="p-4 bg-green-50 border border-green-100 rounded-2xl text-sm text-green-800">
-            <p className="font-semibold mb-0.5">Welcome, {name.split(" ")[0]}! 🌾</p>
-            <p className="text-green-700">
+          <div className={`p-4 ${meta.accentBg} border ${meta.accentBorder} rounded-2xl text-sm`}>
+            <p className={`font-semibold mb-0.5 ${meta.accent}`}>Welcome, {name.split(" ")[0]}! {meta.emoji}</p>
+            <p className={meta.accent}>
               {role === "farmer"
                 ? "Tell us about your farm so we can connect you with the right services."
                 : "Tell us about your equipment and services so farmers can find you."}
@@ -482,9 +528,9 @@ const RegisterPage = () => {
       {/* ────────── STEP 3: Documents & Selfie ────────── */}
       {step === 3 && (
         <form onSubmit={handleDocumentUpload} className="space-y-6">
-          <div className="p-4 bg-green-50 border border-green-100 rounded-2xl text-sm text-green-800">
-            <p className="font-semibold mb-0.5">Final Step: Identity Verification 📄</p>
-            <p className="text-green-700">Upload Aadhaar, take a live selfie, and submit for admin approval.</p>
+          <div className={`p-4 ${meta.accentBg} border ${meta.accentBorder} rounded-2xl text-sm`}>
+            <p className={`font-semibold mb-0.5 ${meta.accent}`}>Final Step: Identity Verification 📄</p>
+            <p className={meta.accent}>Upload Aadhaar, take a live selfie, and submit for admin approval.</p>
           </div>
 
           {/* Aadhaar Upload */}
@@ -519,7 +565,6 @@ const RegisterPage = () => {
                   onClick={() => {
                     setSelfieBlob(null);
                     setSelfiePreview(null);
-                    // Increment key to force a full camera remount with a fresh stream
                     setCameraKey((k) => k + 1);
                   }}
                   className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-2xl py-2.5 hover:bg-slate-50 transition"
@@ -566,7 +611,7 @@ const RegisterPage = () => {
 
       <div className="text-center text-sm text-slate-500 mt-4">
         Already have an account?{" "}
-        <span onClick={() => navigate("/login")} className="font-semibold text-green-600 hover:text-green-700 hover:underline cursor-pointer">
+        <span onClick={() => navigate(`/login?role=${role}`)} className="font-semibold text-green-600 hover:text-green-700 hover:underline cursor-pointer">
           Sign in here
         </span>
       </div>

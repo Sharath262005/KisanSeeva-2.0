@@ -3,6 +3,7 @@ import { Tractor, IndianRupee, Clock, CheckCircle2, ChevronRight } from "lucide-
 import { KSCard, KSBadge } from "../../components/ui";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import API from "../../services/api";
 
 interface Booking {
@@ -21,6 +22,7 @@ interface Booking {
 const ProviderDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,9 +50,9 @@ const ProviderDashboard = () => {
     .reduce((sum, b) => sum + parseFloat(b.total_price), 0);
 
   const stats = [
-    { title: "Pending Requests", value: pendingCount.toString(), icon: <Clock className="text-yellow-600" size={24} />, bg: "bg-yellow-50" },
-    { title: "Completed Bookings", value: completedCount.toString(), icon: <CheckCircle2 className="text-green-700" size={24} />, bg: "bg-green-50" },
-    { title: "Total Earnings", value: `₹${totalEarnings.toLocaleString("en-IN")}`, icon: <IndianRupee className="text-blue-600" size={24} />, bg: "bg-blue-50" },
+    { title: t("pendingRequests"), value: pendingCount.toString(), icon: <Clock className="text-yellow-600" size={24} />, bg: "bg-yellow-50" },
+    { title: t("completedServices"), value: completedCount.toString(), icon: <CheckCircle2 className="text-green-700" size={24} />, bg: "bg-green-50" },
+    { title: t("totalEarnings"), value: `₹${totalEarnings.toLocaleString("en-IN")}`, icon: <IndianRupee className="text-blue-600" size={24} />, bg: "bg-blue-50" },
   ];
 
   const recentRequests = bookings.slice(0, 5);
@@ -82,9 +84,9 @@ const ProviderDashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
-            Welcome back, {user?.name || "Provider"}!
+            {t("welcomeBack")}, {user?.name || "Provider"}!
           </h1>
-          <p className="text-slate-500 mt-1">Manage jobs, schedule equipment and review your weekly revenue.</p>
+          <p className="text-slate-500 mt-1">{t("hereIsOverview")}</p>
         </div>
       </div>
 
@@ -146,30 +148,30 @@ const ProviderDashboard = () => {
       {/* Booking Requests */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-lg overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-800">Active Requests</h3>
+          <h3 className="text-lg font-bold text-slate-800">{t("recentRequests")}</h3>
           <button
             onClick={() => navigate("/provider/bookings")}
             className="text-sm font-bold text-yellow-600 hover:underline"
           >
-            Manage All
+            {t("manage")}
           </button>
         </div>
         {recentRequests.length === 0 ? (
           <div className="p-8 text-center text-slate-400">
-            No service requests found.
+            {t("noRequestsFound")}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-400 font-semibold text-sm">
-                  <th className="px-6 py-4">Booking ID</th>
-                  <th className="px-6 py-4">Farmer</th>
-                  <th className="px-6 py-4">Service</th>
+                  <th className="px-6 py-4">{t("bookingId")}</th>
+                  <th className="px-6 py-4">{t("farmer")}</th>
+                  <th className="px-6 py-4">{t("service")}</th>
                   <th className="px-6 py-4">Duration</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Revenue</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">{t("date")}</th>
+                  <th className="px-6 py-4">{t("earnings")}</th>
+                  <th className="px-6 py-4">{t("status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-600">
@@ -193,7 +195,7 @@ const ProviderDashboard = () => {
                             : "danger"
                         }
                       >
-                        {r.status}
+                        {t(r.status)}
                       </KSBadge>
                     </td>
                   </tr>

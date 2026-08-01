@@ -10,19 +10,25 @@ interface AuthLayoutProps {
 
 const slides = [
   {
-    image: "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=1000&q=80",
+    gradient: "from-emerald-800 via-green-900 to-teal-950",
+    accentColor: "#10b981",
+    icon: "🌾",
     tag: "Smart Farming",
     title: "Empowering Farmers, Enriching Communities.",
     description: "KisanSeeva bridges the gap between local farming requirements and reliable service providers, maximizing efficiency and crop yields."
   },
   {
-    image: "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=1000&q=80",
+    gradient: "from-amber-800 via-yellow-900 to-orange-950",
+    accentColor: "#f59e0b",
+    icon: "🚜",
     tag: "Modern Machinery",
     title: "Access the Best Equipment on Demand.",
     description: "Connect with verified service providers in your area to rent tractors, harvesters, and modern agricultural tools easily."
   },
   {
-    image: "https://images.unsplash.com/photo-1586771107445-d3af111162b7?w=1000&q=80",
+    gradient: "from-blue-800 via-indigo-900 to-slate-950",
+    accentColor: "#6366f1",
+    icon: "💰",
     tag: "Fair Pricing",
     title: "Transparent & Community Driven.",
     description: "Enjoy transparent hourly pricing and help build a stronger local farming community through shared resources."
@@ -81,39 +87,60 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
         </div>
       </div>
 
-      {/* Right side: Image/Branding Carousel */}
-      <div className="hidden lg:block relative overflow-hidden bg-green-900">
-        <div className="absolute inset-0 bg-gradient-to-t from-green-950/95 via-green-900/40 to-transparent z-10"></div>
-        
-        {/* Sliding images container */}
-        <div 
+      {/* Right side: Branding Carousel — CSS gradients (no external images) */}
+      <div className="hidden lg:block relative overflow-hidden">
+        {/* Sliding panels */}
+        <div
           className="absolute inset-0 flex transition-transform duration-1000 ease-in-out"
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
         >
           {slides.map((slide, index) => (
-            <div key={index} className="w-full h-full flex-shrink-0 relative">
-              <img
-                src={slide.image}
-                alt="Agriculture"
-                className="w-full h-full object-cover"
+            <div
+              key={index}
+              className={`w-full h-full flex-shrink-0 relative bg-gradient-to-br ${slide.gradient}`}
+            >
+              {/* Decorative grid overlay */}
+              <div
+                className="absolute inset-0 opacity-[0.06]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
+                  backgroundSize: "40px 40px",
+                }}
               />
+              {/* Glowing orbs */}
+              <div
+                className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-3xl opacity-30"
+                style={{ background: slide.accentColor }}
+              />
+              <div
+                className="absolute bottom-1/4 right-1/4 w-40 h-40 rounded-full blur-2xl opacity-20"
+                style={{ background: slide.accentColor }}
+              />
+              {/* Large icon watermark */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[160px] opacity-10 select-none pointer-events-none">
+                {slide.icon}
+              </div>
             </div>
           ))}
         </div>
+
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
 
         <div className="absolute bottom-16 left-16 right-16 z-20 text-white">
           <span className="bg-yellow-500 text-slate-900 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-6 inline-block">
             {slides[currentSlide].tag}
           </span>
           <div className="min-h-[160px] flex flex-col justify-end">
-            <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4 transition-all duration-700 transform translate-y-0 opacity-100">
+            <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
               {slides[currentSlide].title}
             </h2>
-            <p className="text-green-50 text-lg leading-relaxed max-w-lg opacity-90 transition-all duration-700 delay-100">
+            <p className="text-white/80 text-lg leading-relaxed max-w-lg">
               {slides[currentSlide].description}
             </p>
           </div>
-          
+
           {/* Carousel Indicators */}
           <div className="flex gap-2 mt-8">
             {slides.map((_, index) => (
@@ -121,7 +148,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
                 key={index}
                 onClick={() => setCurrentSlide(index)}
                 className={`h-1.5 rounded-full transition-all duration-500 ${
-                  currentSlide === index ? "w-8 bg-green-400" : "w-2 bg-white/30 hover:bg-white/50"
+                  currentSlide === index ? "w-8 bg-yellow-400" : "w-2 bg-white/30 hover:bg-white/50"
                 }`}
               />
             ))}
@@ -133,3 +160,4 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
 };
 
 export default AuthLayout;
+

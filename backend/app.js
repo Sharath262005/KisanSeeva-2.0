@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const addOtpColumns = require("./migrations/addOtpColumns");
 
 const authRoutes = require("./routes/authRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
@@ -12,6 +13,9 @@ const chatRoutes = require("./routes/chatRoutes");
 const complaintRoutes = require("./routes/complaintRoutes");
 
 const app = express();
+
+// Run startup migrations
+addOtpColumns();
 
 app.use(cors());
 app.use(express.json());
@@ -39,35 +43,21 @@ function stripMarkdown(text) {
     .trim();
 }
 
-app.get("/api/tts", async (req, res) => {
+app.get("/api/tts", (req, res) => {
   try {
     const { text, lang } = req.query;
     if (!text) return res.status(400).send("Missing text");
-    const cleanText = stripMarkdown(text).slice(0, 250);
+    const cleanText = stripMarkdown(String(text)).slice(0, 200);
     if (!cleanText) return res.status(400).send("Empty text");
 
-    const targetLang = (lang || "te").split("-")[0];
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLang}&client=tw-ob`;
+    const targetLang = (String(lang || "te")).split("-")[0];
+    const encoded = encodeURIComponent(cleanText);
+    const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=${targetLang}&total=1&idx=0&textlen=${cleanText.length}&client=tw-ob&prev=input`;
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-    });
-
-    if (!response.ok) {
-      return res.status(500).send("TTS Upstream Error");
-    }
-
-    res.set({
-      "Content-Type": "audio/mpeg",
-    });
-
-    const nodeStream = Readable.fromWeb(response.body);
-    nodeStream.pipe(res);
+    return res.redirect(googleUrl);
   } catch (err) {
-    console.error("TTS Proxy Error:", err.message);
-    res.status(500).send("TTS Proxy Failed");
+    console.error("TTS Redirect Error:", err.message);
+    res.status(500).send("TTS Failed");
   }
 });
 

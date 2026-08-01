@@ -4,6 +4,7 @@ import { KSCard, KSBadge, KSButton, KSModal } from "../../components/ui";
 import LiveTrackingModal from "../../components/dashboard/LiveTrackingModal";
 import PaymentModal from "../../components/dashboard/PaymentModal";
 import PublicProfileModal from "../../components/dashboard/PublicProfileModal";
+import { useLanguage } from "../../context/LanguageContext";
 import API from "../../services/api";
 
 interface Booking {
@@ -34,6 +35,7 @@ interface Booking {
 }
 
 const MyBookings = () => {
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -182,8 +184,8 @@ const MyBookings = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">My Bookings</h1>
-          <p className="text-slate-500 mt-1">View history, status, and track your agricultural bookings.</p>
+          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myBookings")}</h1>
+          <p className="text-slate-500 mt-1">{t("hereIsOverview")}</p>
         </div>
 
         {/* Filter Badges */}
@@ -196,7 +198,7 @@ const MyBookings = () => {
                 filter === item ? "bg-green-700 text-white shadow-sm" : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              {item}
+              {t(item)}
             </button>
           ))}
         </div>
@@ -205,7 +207,7 @@ const MyBookings = () => {
       {/* Bookings Grid */}
       {filteredBookings.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-lg p-12 text-center text-slate-400">
-          No bookings found in this category.
+          {t("noBookingsFound")}
         </div>
       ) : (
         <div className="grid gap-6">
@@ -221,14 +223,14 @@ const MyBookings = () => {
                     <span className="text-sm font-semibold text-slate-400">(KS-{b.id})</span>
                   </div>
                   <p className="text-sm text-slate-500 mt-0.5">
-                    Provider: <span className="font-semibold text-slate-700">{b.provider_name}</span> ({b.provider_phone})
+                    {t("provider")}: <span className="font-semibold text-slate-700">{b.provider_name}</span> ({b.provider_phone})
                   </p>
                   {(b.status === 'confirmed' || b.status === 'completed') && (
                     <button
                       onClick={() => setViewProfileId(b.provider_user_id)}
                       className="text-xs text-blue-600 underline hover:text-blue-800 font-semibold"
                     >
-                      View Provider Profile →
+                      {t("viewProfile")} →
                     </button>
                   )}
                   <p className="text-xs text-slate-400 mt-1">
@@ -261,7 +263,7 @@ const MyBookings = () => {
                     }
                   >
                     {getStatusIcon(b.status)}
-                    <span className="capitalize ml-1">{b.status}</span>
+                    <span className="ml-1">{t(b.status)}</span>
                   </KSBadge>
 
                   {/* Payment Badge */}
@@ -283,7 +285,7 @@ const MyBookings = () => {
                     disabled={actionLoading === b.id}
                     onClick={() => handleCancel(b.id)}
                   >
-                    {actionLoading === b.id ? "Cancelling..." : "Cancel Request"}
+                    {actionLoading === b.id ? "Cancelling..." : t("cancelled") + " ✕"}
                   </KSButton>
                 )}
 
@@ -321,7 +323,7 @@ const MyBookings = () => {
                 {/* Rate Action */}
                 {b.status === "completed" && b.rating === null && (
                   <KSButton variant="outline" className="px-4 py-2 text-xs" onClick={() => openRatingModal(b.id)}>
-                    Rate Provider
+                    ⭐ Rate {t("provider")}
                   </KSButton>
                 )}
 
@@ -398,10 +400,10 @@ const MyBookings = () => {
 
           <div className="flex gap-4 pt-2">
             <KSButton variant="outline" className="w-1/2 justify-center" disabled={ratingSubmitting} onClick={() => setIsRateOpen(false)}>
-              Cancel
+              {t("cancel")}
             </KSButton>
             <KSButton className="w-1/2 justify-center" disabled={ratingSubmitting} onClick={submitRating}>
-              {ratingSubmitting ? "Submitting..." : "Submit Review"}
+              {ratingSubmitting ? "Submitting..." : t("save")}
             </KSButton>
           </div>
         </div>

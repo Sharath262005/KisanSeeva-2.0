@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { User, Phone, ShieldCheck, Tractor, Briefcase } from "lucide-react";
 import { KSCard, KSButton, KSBadge } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const ProviderProfile = () => {
   const { user, updateUserProfile } = useAuth();
+  const { t } = useLanguage();
   
   const [businessName, setBusinessName] = useState("");
   const [phone, setPhone] = useState("");
@@ -49,8 +51,8 @@ const ProviderProfile = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Business Profile</h1>
-        <p className="text-slate-500 mt-1">Configure your agency details, service radius, and verify identity.</p>
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t("myProfile")}</h1>
+        <p className="text-slate-500 mt-1">{t("editProfile")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -76,7 +78,7 @@ const ProviderProfile = () => {
             </h3>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Business Name</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("name")}</label>
               <input
                 type="text"
                 value={businessName}
@@ -87,7 +89,7 @@ const ProviderProfile = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contact Phone</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("phone")}</label>
               <input
                 type="tel"
                 value={phone}
@@ -127,7 +129,7 @@ const ProviderProfile = () => {
 
         <div className="flex justify-end">
           <KSButton type="submit" disabled={submitting} className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold border-0 px-8">
-            {submitting ? "Saving..." : "Save Business Profile"}
+            {submitting ? "Saving..." : t("save")}
           </KSButton>
         </div>
       </form>

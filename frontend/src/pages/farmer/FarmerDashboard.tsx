@@ -3,6 +3,7 @@ import { Sprout, Tractor, CloudSun, CheckCircle2, IndianRupee, AlertCircle } fro
 import { KSCard, KSBadge } from "../../components/ui";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import API from "../../services/api";
 import WeatherWidget from "../../components/dashboard/WeatherWidget";
 
@@ -18,16 +19,10 @@ interface Booking {
 const FarmerDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Weather recommendation
-  const weather = {
-    temp: "32°C",
-    condition: "Sunny / Clear",
-    recommendation: "Perfect conditions for land preparation and sowing.",
-  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -52,9 +47,9 @@ const FarmerDashboard = () => {
     .reduce((sum, b) => sum + parseFloat(b.total_price), 0);
 
   const stats = [
-    { title: "Active Bookings", value: activeBookingsCount.toString(), icon: <Tractor className="text-yellow-600" size={24} />, bg: "bg-yellow-50" },
-    { title: "Completed Services", value: completedCount.toString(), icon: <CheckCircle2 className="text-green-700" size={24} />, bg: "bg-green-50" },
-    { title: "Total Spent", value: `₹${totalSpent.toLocaleString("en-IN")}`, icon: <IndianRupee className="text-blue-600" size={24} />, bg: "bg-blue-50" },
+    { title: t("activeBookings"), value: activeBookingsCount.toString(), icon: <Tractor className="text-yellow-600" size={24} />, bg: "bg-yellow-50" },
+    { title: t("completedServices"), value: completedCount.toString(), icon: <CheckCircle2 className="text-green-700" size={24} />, bg: "bg-green-50" },
+    { title: t("totalSpent"), value: `₹${totalSpent.toLocaleString("en-IN")}`, icon: <IndianRupee className="text-blue-600" size={24} />, bg: "bg-blue-50" },
   ];
 
   // Find recent 5 bookings
@@ -92,13 +87,13 @@ const FarmerDashboard = () => {
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
             Namaste {user?.name ? `${user.name} ji` : "Farmer ji"}!
           </h1>
-          <p className="text-slate-500 mt-1">Here is an overview of your farm services and suggestions.</p>
+          <p className="text-slate-500 mt-1">{t("hereIsOverview")}</p>
         </div>
         <button
           onClick={() => navigate("/farmer/book")}
           className="bg-green-700 hover:bg-green-800 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition"
         >
-          🚜 Book New Service
+          🚜 {t("bookNewService")}
         </button>
       </div>
 
@@ -131,12 +126,12 @@ const FarmerDashboard = () => {
           <div className="flex items-start gap-3">
             <AlertCircle className="text-yellow-500 shrink-0 mt-0.5" size={24} />
             <div>
-              <h4 className="font-bold text-slate-800">Booking Alert</h4>
+              <h4 className="font-bold text-slate-800">{t("bookingAlert")}</h4>
               <p className="text-sm text-slate-500 mt-1">
                 {pendingBooking ? (
                   `Your booking request KS-${pendingBooking.id} is pending approval from ${pendingBooking.provider_name}.`
                 ) : (
-                  "You have no pending booking requests at the moment."
+                  t("noPendingBookings")
                 )}
               </p>
             </div>
@@ -145,7 +140,7 @@ const FarmerDashboard = () => {
             onClick={() => navigate("/farmer/bookings")}
             className="text-sm font-bold text-green-700 hover:text-green-800 mt-4 text-left"
           >
-            Check booking status →
+            {t("checkBookingStatus")}
           </button>
         </KSCard>
       </div>
@@ -153,29 +148,29 @@ const FarmerDashboard = () => {
       {/* Recent Bookings */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-lg overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-800">Recent Bookings</h3>
+          <h3 className="text-lg font-bold text-slate-800">{t("recentBookings")}</h3>
           <button
             onClick={() => navigate("/farmer/bookings")}
             className="text-sm font-bold text-green-700 hover:underline"
           >
-            View All
+            {t("viewAll")}
           </button>
         </div>
         {recentBookings.length === 0 ? (
           <div className="p-8 text-center text-slate-400">
-            No bookings found. Get started by booking a service!
+            {t("noBookingsFound")}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-400 font-semibold text-sm">
-                  <th className="px-6 py-4">Booking ID</th>
-                  <th className="px-6 py-4">Service</th>
-                  <th className="px-6 py-4">Provider</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Price</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">{t("bookingId")}</th>
+                  <th className="px-6 py-4">{t("service")}</th>
+                  <th className="px-6 py-4">{t("provider")}</th>
+                  <th className="px-6 py-4">{t("date")}</th>
+                  <th className="px-6 py-4">{t("price")}</th>
+                  <th className="px-6 py-4">{t("status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-600">
@@ -198,7 +193,7 @@ const FarmerDashboard = () => {
                             : "danger"
                         }
                       >
-                        {b.status}
+                        {t(b.status)}
                       </KSBadge>
                     </td>
                   </tr>

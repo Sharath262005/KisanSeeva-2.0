@@ -6,6 +6,8 @@ import Features from "../../components/landing/Features";
 import HowItWorks from "../../components/landing/HowItWorks";
 import Testimonials from "../../components/landing/Testimonials";
 import CTA from "../../components/landing/CTA";
+import RegisterPortalSection from "../../components/landing/RegisterPortalSection";
+import LoginPortalSection from "../../components/landing/LoginPortalSection";
 import Footer from "../../components/layout/Footer";
 
 function LandingPage() {
@@ -21,6 +23,10 @@ function LandingPage() {
         <Features />
         <Testimonials />
         <CTA />
+        {/* Role-based Register Portal */}
+        <RegisterPortalSection />
+        {/* Role-based Login Portal */}
+        <LoginPortalSection />
       </main>
 
       <Footer />

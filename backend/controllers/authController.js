@@ -7,15 +7,24 @@ require("dotenv").config();
 const register = async (req, res) => {
   const { name, email, password, phone, role, extraInfo, lat, lng, addressCity, addressState } = req.body;
 
-  if (!name || !email || !password || !phone || !role) {
-    return res.status(400).json({ message: "Please fill in all required fields." });
+  // Phone is primary — email is optional for farmer/provider
+  if (!name || !password || !phone || !role) {
+    return res.status(400).json({ message: "Please fill in all required fields (name, phone, password, role)." });
   }
 
   try {
-    // Check if user already exists
-    const userExist = await db.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
-    if (userExist.rows.length > 0) {
-      return res.status(400).json({ message: "User with this email already exists." });
+    // Phone uniqueness check (primary identifier)
+    const phoneExist = await db.query("SELECT id FROM users WHERE phone = $1", [phone]);
+    if (phoneExist.rows.length > 0) {
+      return res.status(400).json({ message: "A user with this phone number already exists." });
+    }
+
+    // Email uniqueness check — only if email is provided
+    if (email) {
+      const userExist = await db.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+      if (userExist.rows.length > 0) {
+        return res.status(400).json({ message: "User with this email already exists." });
+      }
     }
 
     // Hash the password
@@ -30,7 +39,7 @@ const register = async (req, res) => {
     `;
     const result = await db.query(insertQuery, [
       name,
-      email.toLowerCase(),
+      email ? email.toLowerCase() : null,
       hashedPassword,
       phone,
       role,
@@ -46,7 +55,7 @@ const register = async (req, res) => {
     // Create JWT only if admin (active), otherwise return just user for pending flow
     let token = null;
     let message = "Registration successful. Your account is pending admin approval.";
-    
+
     if (newUser.role === "admin" || newUser.status === "active") {
       token = jwt.sign(
         { id: newUser.id, email: newUser.email, role: newUser.role },
@@ -58,7 +67,7 @@ const register = async (req, res) => {
 
     res.status(201).json({
       message,
-      token, // will be null for farmers/providers until we update it to active, but we return it for structure
+      token,
       user: {
         id: newUser.id,
         name: newUser.name,
@@ -411,6 +420,147 @@ const getPublicProfile = async (req, res) => {
   }
 };
 
+// ─── Send OTP ─────────────────────────────────────────────────────────────────
+// Generates a 6-digit OTP for phone-based login (Farmer/Provider).
+// Dev mode: OTP returned in response. Prod mode: log to console (swap in SMS provider).
+const sendOtp = async (req, res) => {
+  const { phone, role } = req.body;
+
+  if (!phone || !role) {
+    return res.status(400).json({ message: "Phone number and role are required." });
+  }
+
+  try {
+    const result = await db.query("SELECT * FROM users WHERE phone = $1", [phone]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "This phone number is not registered. Please register first.",
+        notRegistered: true
+      });
+    }
+
+    const user = result.rows[0];
+
+    if (user.role !== role) {
+      return res.status(403).json({
+        message: `This number is registered as a '${user.role}', not '${role}'.`
+      });
+    }
+
+    if (user.status === "pending") {
+      return res.status(403).json({
+        message: "Your account is pending admin approval. Please wait."
+      });
+    }
+
+    if (user.status === "suspended") {
+      return res.status(403).json({
+        message: "Your account is suspended. Please contact the administrator."
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await db.query(
+      "UPDATE users SET otp_code = $1, otp_expires = $2 WHERE phone = $3",
+      [otp, expires, phone]
+    );
+
+    // Dev mode: return OTP in response for testing
+    // Prod: swap in Twilio/MSG91 here, remove otp from response
+    const isDev = process.env.NODE_ENV !== "production";
+    if (isDev) {
+      console.log(`[DEV OTP] Phone: ${phone} | OTP: ${otp}`);
+      return res.json({
+        message: "OTP sent successfully. (Dev mode — check API response)",
+        otp // ← REMOVE THIS in production
+      });
+    }
+
+    // --- Production SMS send would go here ---
+    // await twilioClient.messages.create({ body: `Your KisanSeeva OTP: ${otp}`, from: process.env.TWILIO_FROM, to: phone });
+    console.log(`[PROD OTP] Phone: ${phone} | OTP: ${otp} (SMS not configured)`);
+    res.json({ message: "OTP sent to your registered mobile number." });
+
+  } catch (error) {
+    console.error("Send OTP Error:", error);
+    res.status(500).json({ message: "Server error sending OTP." });
+  }
+};
+
+// ─── Verify OTP ────────────────────────────────────────────────────────────────
+// Verifies OTP and returns JWT on success (same shape as existing login).
+const verifyOtp = async (req, res) => {
+  const { phone, otp, role } = req.body;
+
+  if (!phone || !otp || !role) {
+    return res.status(400).json({ message: "Phone, OTP, and role are required." });
+  }
+
+  try {
+    const result = await db.query(
+      "SELECT * FROM users WHERE phone = $1",
+      [phone]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Phone number not found." });
+    }
+
+    const user = result.rows[0];
+
+    if (!user.otp_code || !user.otp_expires) {
+      return res.status(400).json({ message: "No OTP was requested. Please request a new OTP." });
+    }
+
+    if (new Date() > new Date(user.otp_expires)) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    if (user.otp_code !== String(otp).trim()) {
+      return res.status(400).json({ message: "Incorrect OTP. Please try again." });
+    }
+
+    if (user.role !== role) {
+      return res.status(403).json({ message: `This number is registered as '${user.role}'.` });
+    }
+
+    // Clear OTP after use
+    await db.query(
+      "UPDATE users SET otp_code = NULL, otp_expires = NULL WHERE phone = $1",
+      [phone]
+    );
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Login successful.",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        extraInfo: user.extra_info,
+        status: user.status
+      }
+    });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Server error verifying OTP." });
+  }
+};
+
 
 
 module.exports = {
@@ -420,5 +570,7 @@ module.exports = {
   updateProfile,
   forgotPassword,
   resetPassword,
-  getPublicProfile
+  getPublicProfile,
+  sendOtp,
+  verifyOtp
 };

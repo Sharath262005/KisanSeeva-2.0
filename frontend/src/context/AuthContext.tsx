@@ -21,9 +21,11 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string, role: string) => Promise<User>;
+  sendOtp: (phone: string, role: string) => Promise<{ message: string; otp?: string; notRegistered?: boolean }>;
+  verifyOtp: (phone: string, otp: string, role: string) => Promise<User>;
   register: (data: {
     name: string;
-    email: string;
+    email?: string;
     phone: string;
     role: string;
     password: string;
@@ -65,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, []);
 
+  // Email + Password login (Admin)
   const login = async (email: string, password: string, role: string): Promise<User> => {
     try {
       const res = await API.post("/auth/login", { email, password, role });
@@ -80,9 +83,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Send OTP to phone number (Farmer / Provider)
+  const sendOtp = async (
+    phone: string,
+    role: string
+  ): Promise<{ message: string; otp?: string; notRegistered?: boolean }> => {
+    try {
+      const res = await API.post("/auth/send-otp", { phone, role });
+      return res.data;
+    } catch (err: any) {
+      const data = err.response?.data;
+      const error: any = new Error(data?.message || "Failed to send OTP.");
+      error.notRegistered = data?.notRegistered ?? false;
+      throw error;
+    }
+  };
+
+  // Verify OTP and login (Farmer / Provider)
+  const verifyOtp = async (phone: string, otp: string, role: string): Promise<User> => {
+    try {
+      const res = await API.post("/auth/verify-otp", { phone, otp, role });
+      const { token: receivedToken, user: receivedUser } = res.data;
+
+      localStorage.setItem("token", receivedToken);
+      setToken(receivedToken);
+      setUser(receivedUser);
+      return receivedUser;
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || "OTP verification failed.";
+      throw new Error(errorMsg);
+    }
+  };
+
   const register = async (data: {
     name: string;
-    email: string;
+    email?: string;
     phone: string;
     role: string;
     password: string;
@@ -150,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUserProfile, forgotPassword, resetPassword }}>
+    <AuthContext.Provider value={{ user, token, loading, login, sendOtp, verifyOtp, register, logout, updateUserProfile, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

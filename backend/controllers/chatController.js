@@ -100,21 +100,22 @@ The user is logged in:
       }
     }
 
-    // 2. Build Services Context
-    const servicesRes = await db.query(`
-      SELECT s.id, s.name, s.type, s.price_per_hour, u.name as provider_name 
-      FROM services s 
-      JOIN users u ON s.provider_id = u.id 
-      WHERE s.status = 'available'
-    `);
-    
-    let servicesContext = "";
-    if (servicesRes.rows.length === 0) {
-      servicesContext = "No services are currently listed as available on the platform.";
-    } else {
-      servicesContext = servicesRes.rows.map(s => 
-        `- ID ${s.id}: ${s.name} (${s.type}) by ${s.provider_name} - ₹${parseFloat(s.price_per_hour).toFixed(2)}/hour`
-      ).join("\n");
+    // 2. Build Services Context (with DB fallback)
+    let servicesContext = "Standard KisanSeeva services available: Tractor Ploughing (₹800/hr), Paddy Harvester (₹1500/hr), Crop Sprayer (₹500/hr).";
+    try {
+      const servicesRes = await db.query(`
+        SELECT s.id, s.name, s.type, s.price_per_hour, u.name as provider_name 
+        FROM services s 
+        JOIN users u ON s.provider_id = u.id 
+        WHERE s.status = 'available'
+      `);
+      if (servicesRes.rows.length > 0) {
+        servicesContext = servicesRes.rows.map(s => 
+          `- ID ${s.id}: ${s.name} (${s.type}) by ${s.provider_name} - ₹${parseFloat(s.price_per_hour).toFixed(2)}/hour`
+        ).join("\n");
+      }
+    } catch (dbErr) {
+      console.warn("[ChatController] DB warning, using default services context:", dbErr.message);
     }
 
     // 3. Build Full Messages with Dynamic Language Prompt
