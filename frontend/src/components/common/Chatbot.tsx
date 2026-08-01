@@ -305,10 +305,13 @@ function speakWithWebSpeech(
 ) {
   if (!window.speechSynthesis) { onEnd?.(); return; }
 
-  const cleanText = stripMarkdown(text).slice(0, 300);
+  const cleanText = stripMarkdown(text).slice(0, 350);
   if (!cleanText) { onEnd?.(); return; }
 
   try {
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
     window.speechSynthesis.cancel();
   } catch { }
 
@@ -324,6 +327,10 @@ function speakWithWebSpeech(
   };
 
   const doSpeak = () => {
+    try {
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+    } catch { }
+
     const voices = window.speechSynthesis.getVoices() || [];
     let matched: SpeechSynthesisVoice | undefined;
 
@@ -349,21 +356,39 @@ function speakWithWebSpeech(
       utt.lang = `${langCode}-IN`;
     }
 
-    utt.rate = 0.95;
+    // Slightly lower rate (0.9) makes voice significantly clearer & more audible on mobile speakers
+    utt.rate = 0.9;
     utt.pitch = 1.0;
     utt.volume = 1.0;
 
-    utt.onend = () => onEnd?.();
+    let ended = false;
+    const safeDone = () => {
+      if (ended) return;
+      ended = true;
+      clearTimeout(safetyTimer);
+      onEnd?.();
+    };
+
+    // Safety timeout so live call never gets stuck if mobile browser fails to emit onend
+    const estimatedMs = Math.max(3500, cleanText.length * 85);
+    const safetyTimer = setTimeout(() => {
+      safeDone();
+    }, estimatedMs);
+
+    utt.onend = () => {
+      safeDone();
+    };
+
     utt.onerror = (e) => {
       console.warn("WebSpeech utterance notice:", e);
-      onEnd?.();
+      safeDone();
     };
 
     try {
       window.speechSynthesis.speak(utt);
     } catch (e) {
       console.warn("speechSynthesis.speak failed:", e);
-      onEnd?.();
+      safeDone();
     }
   };
 
@@ -381,7 +406,7 @@ function speakWithWebSpeech(
         fired = true;
         doSpeak();
       }
-    }, 400);
+    }, 300);
   } else {
     doSpeak();
   }
@@ -495,17 +520,28 @@ export default function Chatbot() {
 
   const toggleMic = () => {
     if (!SR) { alert("Speech recognition requires Chrome or Edge."); return; }
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+      }
+    } catch { }
     if (isListening) {
       recRef.current?.stop();
     } else {
       if (audioRef.current) { audioRef.current.pause(); setIsBotSpeaking(false); }
-      window.speechSynthesis.cancel();
       try { recRef.current?.start(); } catch { }
     }
   };
 
   const startLiveVoice = () => {
     if (!SR) { alert("Speech recognition requires Chrome or Edge."); return; }
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+      }
+    } catch { }
     setIsLiveVoice(true);
     setVoiceTranscript("");
     setBotReply("");
