@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KisanSeeva</string>
+    <string name="title_activity_main">KisanSeeva</string>
+    <string name="package_name">com.kisanseeva.app</string>
+    <string name="custom_url_scheme">com.kisanseeva.app</string>
+</resources>
