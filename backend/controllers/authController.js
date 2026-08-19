@@ -328,7 +328,7 @@ const forgotPassword = async (req, res) => {
     try {
       const transporter = createMailTransporter();
       await transporter.sendMail({
-        from: `"KisanSeeva 🌾" <${process.env.GMAIL_USER}>`,
+        from: process.env.GMAIL_USER,
         to: email,
         subject: "🔐 Reset Your KisanSeeva Password",
         html: htmlBody,
