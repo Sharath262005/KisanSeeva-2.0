@@ -3,7 +3,13 @@ const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = "llama-3.1-8b-instant";
+const GROQ_MODELS = [
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "groq/compound-mini",
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant"
+];
 
 const LANGUAGE_NAMES = {
   te: "Telugu (తెలుగు)",
@@ -129,30 +135,49 @@ The user is logged in:
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: fullMessages,
-        stream: false,
-      }),
-    });
+    let reply = null;
+    let lastError = null;
 
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error("Groq Error Response:", errText);
-      return res.status(502).json({
-        message: "AI service error. Please check your API key.",
-        error: errText,
-      });
+    for (const model of GROQ_MODELS) {
+      try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: fullMessages,
+            stream: false,
+          }),
+        });
+
+        if (groqRes.ok) {
+          const data = await groqRes.json();
+          let rawReply = data?.choices?.[0]?.message?.content || "";
+          // Strip any internal reasoning <think>...</think> tags if present
+          rawReply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+          if (rawReply) {
+            reply = rawReply;
+            break;
+          }
+        } else {
+          lastError = await groqRes.text();
+          console.warn(`[ChatController] Model ${model} failed:`, lastError);
+        }
+      } catch (err) {
+        lastError = err.message;
+        console.warn(`[ChatController] Error invoking ${model}:`, err.message);
+      }
     }
 
-    const data = await groqRes.json();
-    const reply = data?.choices?.[0]?.message?.content || "Sorry, I could not generate a response.";
+    if (!reply) {
+      return res.status(502).json({
+        message: "AI service error. Please check your API key.",
+        error: lastError,
+      });
+    }
 
     res.json({ reply });
   } catch (error) {
