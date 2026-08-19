@@ -6,7 +6,15 @@ interface AuthLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle: string;
+  appLogo?: string;          // standalone mode: override logo
+  role?: "farmer" | "provider" | "admin";  // standalone mode: role-specific branding
 }
+
+const APP_NAMES: Record<string, string> = {
+  farmer: "KisanSeeva Farmer",
+  provider: "KisanSeeva Partner",
+  admin: "KisanSeeva Admin",
+};
 
 const slides = [
   {
@@ -35,7 +43,7 @@ const slides = [
   }
 ];
 
-const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
+const AuthLayout = ({ children, title, subtitle, appLogo, role }: AuthLayoutProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -45,45 +53,53 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
     return () => clearInterval(timer);
   }, []);
 
+  const logoSrc = appLogo || "/logo.png";
+  const appName = role ? APP_NAMES[role] : "KisanSeeva";
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-slate-50">
       {/* Left side: Form */}
-      <div className="flex flex-col justify-between p-8 md:p-12 lg:p-16">
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2 group">
-            <img 
-              src="/logo.png" 
-              alt="KisanSeeva Logo" 
-              className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" 
+      <div className="flex flex-col justify-between p-6 md:p-10 lg:p-14">
+        {/* Header — App Logo on left */}
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 group">
+            <img
+              src={logoSrc}
+              alt={`${appName} Logo`}
+              className="h-10 w-auto max-w-[140px] object-contain group-hover:scale-105 transition-transform"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                const fallback = e.currentTarget.nextElementSibling;
+                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                 if (fallback) {
                   fallback.classList.remove('hidden');
                   fallback.classList.add('flex');
                 }
               }}
             />
-            <div className="hidden items-center gap-2 text-2xl font-bold text-green-700">
-              <Tractor size={28} />
-              <span>KisanSeeva</span>
+            <div className="hidden items-center gap-2 text-xl font-bold text-green-700">
+              <Tractor size={26} />
+              <span>{appName}</span>
             </div>
           </Link>
+          {role && (
+            <span className="text-xs font-bold text-slate-400 border border-slate-200 px-2 py-0.5 rounded-full">
+              {appName}
+            </span>
+          )}
         </div>
 
         {/* Content */}
-        <div className="w-full max-w-md mx-auto my-auto py-12">
-          <div className="mb-8">
-            <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-2">{title}</h1>
-            <p className="text-slate-600 text-lg">{subtitle}</p>
+        <div className="w-full max-w-md mx-auto my-auto py-10">
+          <div className="mb-6">
+            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-1.5">{title}</h1>
+            <p className="text-slate-500 text-sm leading-relaxed">{subtitle}</p>
           </div>
           {children}
         </div>
 
         {/* Footer */}
-        <div className="text-slate-500 text-sm text-center lg:text-left mt-8">
-          © 2026 KisanSeeva. Connecting rural India.
+        <div className="text-slate-400 text-xs text-center lg:text-left">
+          © 2026 {appName}. Connecting rural India.
         </div>
       </div>
 

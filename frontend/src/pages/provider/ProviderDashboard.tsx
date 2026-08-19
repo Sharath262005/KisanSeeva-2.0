@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Tractor, IndianRupee, Clock, CheckCircle2, ChevronRight } from "lucide-react";
-import { KSCard, KSBadge } from "../../components/ui";
+import { Tractor, IndianRupee, Clock, CheckCircle2, ChevronRight, Bell, AlertCircle } from "lucide-react";
+import { KSCard, KSBadge, KSButton } from "../../components/ui";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -79,7 +79,28 @@ const ProviderDashboard = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* ── NEW BOOKING ALERT BANNER ── */}
+      {pendingCount > 0 && (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5 flex items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-white/20 rounded-2xl">
+              <Bell size={22} className="animate-pulse" />
+            </div>
+            <div>
+              <p className="font-extrabold text-base">{pendingCount} New Booking Request{pendingCount > 1 ? "s" : ""} Waiting!</p>
+              <p className="text-sm text-white/80">Respond quickly to confirm your jobs for the day.</p>
+            </div>
+          </div>
+          <KSButton
+            onClick={() => navigate("/provider/bookings")}
+            className="bg-white text-amber-700 hover:bg-amber-50 border-0 font-bold shrink-0 text-sm px-4 py-2"
+          >
+            View Requests
+          </KSButton>
+        </div>
+      )}
+
       {/* Welcome Heading */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -96,8 +117,8 @@ const ProviderDashboard = () => {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid md:grid-cols-3 gap-6">
+      {/* Stats Grid — 1 col on mobile, 3 on md+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <KSCard key={stat.title} className="flex items-center gap-4">
             <div className={`p-4 rounded-2xl ${stat.bg}`}>{stat.icon}</div>
@@ -110,7 +131,7 @@ const ProviderDashboard = () => {
       </div>
 
       {/* Revenue & Overview Charts */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <KSCard className="lg:col-span-2">
           <h3 className="text-lg font-bold text-slate-800 mb-6">Revenue Chart (Weekly)</h3>
           {/* Simple Inline SVG representing a bar chart */}
@@ -161,7 +182,8 @@ const ProviderDashboard = () => {
             {t("noRequestsFound")}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full -mx-0">
+            <div className="min-w-[600px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-400 font-semibold text-sm">
@@ -202,6 +224,7 @@ const ProviderDashboard = () => {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ const {
   getProviderBookings,
   updateBookingStatus,
   rateBooking,
+  rateFarmer,
   updateProviderLocation,
   getBookingLocation,
   payBooking,
@@ -19,6 +20,7 @@ router.get("/farmer", verifyToken, checkRole(["farmer"]), getFarmerBookings);
 router.get("/provider", verifyToken, checkRole(["provider"]), getProviderBookings);
 router.put("/:id/status", verifyToken, updateBookingStatus);
 router.put("/:id/rate", verifyToken, checkRole(["farmer"]), rateBooking);
+router.put("/:id/rate-farmer", verifyToken, checkRole(["provider"]), rateFarmer);
 router.put("/:id/location", verifyToken, checkRole(["provider"]), updateProviderLocation);
 router.get("/:id/location", verifyToken, getBookingLocation);
 router.post("/:id/pay", verifyToken, checkRole(["farmer"]), payBooking);

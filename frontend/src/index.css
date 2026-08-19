@@ -124,7 +124,6 @@
   margin: 0 auto;
 }
 
-/* ─── Card Hover 3D Effect ──────────────────────────────── */
 .card-3d {
   transform-style: preserve-3d;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -132,4 +131,30 @@
 .card-3d:hover {
   transform: translateY(-8px) rotateX(2deg);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* ─── Mobile Safe Area (Notch / Home Indicator) ─────────── */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Capacitor / full-screen native app base */
+html, body, #root {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Prevent text selection on interactive elements for native feel */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* ─── Xs breakpoint helper (< 480px) ────────────────────── */
+@media (min-width: 480px) {
+  .xs\:inline { display: inline; }
 }

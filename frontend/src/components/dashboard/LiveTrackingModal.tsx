@@ -110,66 +110,77 @@ const LiveTrackingModal: React.FC<Props> = ({ isOpen, onClose, bookingId, role }
 
   if (!isOpen) return null;
 
-  // Choose which location to center the map on
-  const mapCenter = providerLocation || farmLocation || userLocation;
+  // Choose which location to center the map on — fallback to India center if null
+  const defaultCenter = { lat: 17.3850, lng: 78.4867 }; // Default India location
+  const activeCenter = providerLocation || farmLocation || userLocation || defaultCenter;
 
   // Build OpenStreetMap embed URL with markers
   const buildMapUrl = () => {
-    if (!mapCenter) return null;
-    const { lat, lng } = mapCenter;
-    const delta = 0.01;
+    const { lat, lng } = activeCenter;
+    const delta = 0.015;
     const bbox = `${(lng - delta).toFixed(6)}%2C${(lat - delta).toFixed(6)}%2C${(lng + delta).toFixed(6)}%2C${(lat + delta).toFixed(6)}`;
-    // Show provider location as the marker (most relevant), fallback to farm
-    const markerLoc = providerLocation || farmLocation;
-    const markerParam = markerLoc ? `&marker=${markerLoc.lat.toFixed(6)}%2C${markerLoc.lng.toFixed(6)}` : "";
+    const markerLoc = providerLocation || farmLocation || activeCenter;
+    const markerParam = `&marker=${markerLoc.lat.toFixed(6)}%2C${markerLoc.lng.toFixed(6)}`;
     return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${markerParam}`;
   };
 
   const mapUrl = buildMapUrl();
+  const googleMapsUrl = activeCenter ? `https://www.google.com/maps/search/?api=1&query=${activeCenter.lat},${activeCenter.lng}` : "#";
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-slate-900/75 backdrop-blur-sm">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col" style={{ height: "88vh" }}>
 
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+        <div className="flex justify-between items-center px-4 sm:px-6 py-3.5 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${role === "provider" ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-700"}`}>
+            <div className={`p-2.5 rounded-xl ${role === "provider" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-800"}`}>
               <Navigation size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800">
-                {role === "provider" ? "Share Your Location" : "Track Service Provider"}
+              <h2 className="text-base sm:text-xl font-bold text-slate-800">
+                {role === "provider" ? "Share Live GPS Location" : "Track Driver & Live GPS"}
               </h2>
-              <p className="text-xs text-slate-400 font-medium">Booking ID: KS-{bookingId}</p>
+              <p className="text-xs text-slate-400 font-medium">Booking ID: #KS-{bookingId}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
         {/* Status Bar */}
-        <div className={`px-6 py-2.5 text-xs font-semibold flex items-center gap-2 border-b ${
+        <div className={`px-4 sm:px-6 py-2.5 text-xs font-semibold flex items-center justify-between gap-2 border-b ${
           isBroadcasting
             ? "bg-blue-50 text-blue-700 border-blue-100"
             : providerLocation && role === "farmer"
-            ? "bg-green-50 text-green-700 border-green-100"
+            ? "bg-emerald-50 text-emerald-700 border-emerald-100"
             : "bg-amber-50 text-amber-700 border-amber-100"
         }`}>
-          {role === "provider" ? (
-            isBroadcasting
-              ? <><span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" /> Live — broadcasting your GPS to the farmer every few seconds</>
-              : <><MapPin size={13} /> Press "Start Journey" to begin sharing your real-time location with the farmer</>
-          ) : (
-            providerLocation
-              ? <><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" /> Provider is en route — map auto‑refreshes every 10 s</>
-              : <><MapPin size={13} /> Waiting for provider to start their journey and share location...</>
-          )}
+          <div className="flex items-center gap-2 min-w-0 truncate">
+            {role === "provider" ? (
+              isBroadcasting
+                ? <><span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse inline-block shrink-0" /> <span className="truncate">Live GPS broadcasting to farmer</span></>
+                : <><MapPin size={13} className="shrink-0" /> <span className="truncate">Tap "Start Journey" to share GPS location</span></>
+            ) : (
+              providerLocation
+                ? <><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block shrink-0" /> <span className="truncate">Driver en route — auto refreshing map</span></>
+                : <><MapPin size={13} className="shrink-0" /> <span className="truncate">Provider ready — active tracking mode</span></>
+            )}
+          </div>
+
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] font-bold text-blue-600 bg-white px-2.5 py-1 rounded-lg border border-blue-200 hover:bg-blue-50 transition shrink-0 cursor-pointer"
+          >
+            🗺️ Google Maps Navigation ↗
+          </a>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 px-6 py-2 text-sm font-semibold border-b border-red-100">
+          <div className="bg-red-50 text-red-600 px-6 py-2 text-xs font-semibold border-b border-red-100">
             ⚠️ {error}
           </div>
         )}
@@ -180,45 +191,18 @@ const LiveTrackingModal: React.FC<Props> = ({ isOpen, onClose, bookingId, role }
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3 text-slate-500">
                 <Loader className="animate-spin" size={32} />
-                <p className="text-sm font-semibold">Getting your current location…</p>
+                <p className="text-sm font-semibold">Getting current GPS location…</p>
               </div>
             </div>
           )}
 
-          {mapUrl ? (
-            <iframe
-              key={`${providerLocation?.lat}-${providerLocation?.lng}`}
-              title="Live Location Map"
-              src={mapUrl}
-              style={{ border: 0, width: "100%", height: "100%" }}
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-slate-50">
-              <div className="text-5xl">🗺️</div>
-              <div className="text-center">
-                <p className="font-bold text-slate-700 text-lg">Waiting for location data</p>
-                <p className="text-sm text-slate-500 mt-1 max-w-xs">
-                  {role === "provider"
-                    ? "Click \"Start Journey\" to begin broadcasting your location."
-                    : "The map will appear once the provider shares their location."}
-                </p>
-              </div>
-              {/* Coordinates info panels */}
-              <div className="flex gap-3 mt-2 text-xs">
-                {farmLocation && (
-                  <div className="bg-green-50 border border-green-100 rounded-xl px-3 py-2 text-green-700 font-semibold">
-                    🌾 Farm: {farmLocation.lat.toFixed(4)}, {farmLocation.lng.toFixed(4)}
-                  </div>
-                )}
-                {userLocation && (
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 text-blue-700 font-semibold">
-                    📍 You: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <iframe
+            key={`${activeCenter.lat}-${activeCenter.lng}`}
+            title="Live Location Map"
+            src={mapUrl}
+            style={{ border: 0, width: "100%", height: "100%" }}
+            loading="lazy"
+          />
         </div>
 
         {/* Legend & Controls */}

@@ -466,12 +466,65 @@ const stopTimer = async (req, res) => {
   }
 };
 
+// Rate a Farmer after a completed booking (Provider only)
+const rateFarmer = async (req, res) => {
+  const { id } = req.params;
+  const { rating, feedback } = req.body;
+
+  if (!rating || rating < 1 || rating > 5) {
+    return res.status(400).json({ message: "Rating must be between 1 and 5." });
+  }
+
+  try {
+    // Verify booking belongs to this provider and is completed
+    const bookingRes = await db.query(
+      `SELECT b.*, s.provider_id, s.name as service_name
+       FROM bookings b JOIN services s ON b.service_id = s.id
+       WHERE b.id = $1`,
+      [id]
+    );
+    if (bookingRes.rows.length === 0) {
+      return res.status(404).json({ message: "Booking not found." });
+    }
+    const booking = bookingRes.rows[0];
+
+    if (Number(booking.provider_id) !== Number(req.user.id)) {
+      return res.status(403).json({ message: "You can only rate farmers for your own bookings." });
+    }
+    if (booking.status !== "completed") {
+      return res.status(400).json({ message: "You can only rate farmers for completed bookings." });
+    }
+    if (booking.provider_rating !== null) {
+      return res.status(409).json({ message: "You have already rated this farmer." });
+    }
+
+    const updateQuery = `
+      UPDATE bookings
+      SET provider_rating = $1, provider_feedback = $2
+      WHERE id = $3
+      RETURNING *
+    `;
+    const result = await db.query(updateQuery, [rating, feedback || null, id]);
+
+    // Notify farmer they received a rating
+    const stars = '⭐'.repeat(rating);
+    const notifMsg = `${stars} You received a ${rating}/5 star rating from your service provider for booking KS-${id} (${booking.service_name}).`;
+    await db.query("INSERT INTO notifications (user_id, message) VALUES ($1, $2)", [booking.farmer_id, notifMsg]);
+
+    res.json({ message: "Farmer rated successfully.", booking: result.rows[0] });
+  } catch (error) {
+    console.error("Rate Farmer Error:", error);
+    res.status(500).json({ message: "Server error rating farmer." });
+  }
+};
+
 module.exports = {
   createBooking,
   getFarmerBookings,
   getProviderBookings,
   updateBookingStatus,
   rateBooking,
+  rateFarmer,
   updateProviderLocation,
   getBookingLocation,
   payBooking,

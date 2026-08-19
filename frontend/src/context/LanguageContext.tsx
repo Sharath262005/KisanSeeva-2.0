@@ -1,5 +1,27 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { UI_TRANSLATIONS } from "../utils/translations";
+import { SecureStorage } from "@aparajita/capacitor-secure-storage";
+import { Capacitor } from "@capacitor/core";
+
+const LANG_KEY = "app_language";
+const isNative = () => Capacitor.isNativePlatform();
+
+async function persistLanguage(code: string): Promise<void> {
+  try {
+    if (isNative()) await SecureStorage.setItem(LANG_KEY, code);
+  } catch { /* ignore */ }
+  try { localStorage.setItem(LANG_KEY, code); } catch { /* ignore */ }
+}
+
+async function readPersistedLanguage(): Promise<string | null> {
+  if (isNative()) {
+    try {
+      const val = await SecureStorage.getItem(LANG_KEY);
+      if (val) return val;
+    } catch { /* fall through */ }
+  }
+  try { return localStorage.getItem(LANG_KEY); } catch { return null; }
+}
 
 export interface LanguageOption {
   code: string;
@@ -30,16 +52,27 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentLanguage, setCurrentLanguageState] = useState<LanguageOption>(() => {
-    const savedCode = localStorage.getItem("app_language");
+    // Sync fallback: read from localStorage (populated on previous session)
+    const savedCode = localStorage.getItem(LANG_KEY);
     const found = SUPPORTED_LANGUAGES.find((l) => l.code === savedCode);
     return found || SUPPORTED_LANGUAGES[0];
   });
+
+  // On mount: read from SecureStorage (source of truth on native)
+  useEffect(() => {
+    readPersistedLanguage().then((code) => {
+      if (code) {
+        const found = SUPPORTED_LANGUAGES.find((l) => l.code === code);
+        if (found) setCurrentLanguageState(found);
+      }
+    });
+  }, []);
 
   const setLanguage = (code: string) => {
     const selected = SUPPORTED_LANGUAGES.find((l) => l.code === code);
     if (selected) {
       setCurrentLanguageState(selected);
-      localStorage.setItem("app_language", selected.code);
+      persistLanguage(selected.code);
     }
   };
 
@@ -49,7 +82,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    // Keep html lang attribute synchronized
     document.documentElement.lang = currentLanguage.code;
   }, [currentLanguage]);
 

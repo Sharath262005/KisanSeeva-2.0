@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const addOtpColumns = require("./migrations/addOtpColumns");
+const addFarmerRatingColumns = require("./migrations/addFarmerRatingColumns");
 
 const authRoutes = require("./routes/authRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
@@ -16,6 +17,7 @@ const app = express();
 
 // Run startup migrations
 addOtpColumns();
+addFarmerRatingColumns();
 
 app.use(cors());
 app.use(express.json());

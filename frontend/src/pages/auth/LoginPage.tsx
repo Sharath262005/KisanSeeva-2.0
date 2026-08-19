@@ -173,13 +173,39 @@ function Countdown({ seconds, onExpire }: { seconds: number; onExpire: () => voi
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login, sendOtp, verifyOtp } = useAuth();
+  const { login, sendOtp, verifyOtp, serverWaking } = useAuth();
 
   const roleParam = searchParams.get("role") as Role | null;
+  const isStandalone = searchParams.get("standalone") === "true";
   const validRoles: Role[] = ["farmer", "provider", "admin"];
   const initialRole: Role = roleParam && validRoles.includes(roleParam) ? roleParam : "farmer";
 
   const [role] = useState<Role>(initialRole);
+
+  // Auto-navigate when user logs in (driven by AuthContext state, not manual navigate)
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user) {
+      if (user.role === "admin") navigate("/admin", { replace: true });
+      else if (user.role === "farmer") navigate("/farmer", { replace: true });
+      else if (user.role === "provider") navigate("/provider", { replace: true });
+    }
+  }, [user, navigate]);
+
+  // Logo map per role
+  const ROLE_LOGO: Record<Role, string> = {
+    farmer: "/farmer-logo.png",
+    provider: "/provider-logo.png",
+    admin: "/admin-logo.png",
+  };
+  const appLogo = ROLE_LOGO[role];
+
+  // Title/subtitle per role
+  const ROLE_TITLE: Record<Role, { title: string; subtitle: string }> = {
+    farmer: { title: "Farmer Login", subtitle: "Book machinery, check crop health & manage your farm" },
+    provider: { title: "Partner Login", subtitle: "Accept bookings, manage your equipment & grow earnings" },
+    admin: { title: "Admin Login", subtitle: "Manage users, providers, bookings & platform operations" },
+  };
   const [step, setStep] = useState<Step>("phone");
   const [loginMethod, setLoginMethod] = useState<LoginMethod>("mobile");
 
@@ -251,7 +277,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await verifyOtp(phone.trim(), otp, role);
-      navigate(role === "farmer" ? "/farmer" : "/provider");
+      // Navigation handled by useEffect above (user state change)
     } catch (err: any) {
       setError(err.message || "Invalid OTP.");
     } finally {
@@ -270,9 +296,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login(email, password, role);
-      if (role === "admin") navigate("/admin");
-      else if (role === "farmer") navigate("/farmer");
-      else navigate("/provider");
+      // Navigation is handled by useEffect above (user state change → navigate)
     } catch (err: any) {
       setError(err.message || "Invalid credentials.");
     } finally {
@@ -300,38 +324,53 @@ const LoginPage = () => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Login to manage your agricultural tasks & bookings"
+      title={ROLE_TITLE[role].title}
+      subtitle={ROLE_TITLE[role].subtitle}
+      appLogo={isStandalone ? appLogo : undefined}
+      role={role}
     >
-      {/* Role Identity Header */}
+      {/* Role Identity Banner */}
       <div className="mb-6">
-        {/* Back to Home */}
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-700 transition mb-4"
-        >
-          <ArrowLeft size={14} /> Back to Home
-        </button>
+        {/* Back to Home — only shown in combined web mode */}
+        {!isStandalone && (
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-700 transition mb-4"
+          >
+            <ArrowLeft size={14} /> Back to Home
+          </button>
+        )}
 
-        {/* Role Badge */}
-        <div className={`flex items-center gap-3 rounded-2xl p-4 ${cfg.theme.headerBg} text-white shadow-lg`}>
+        {/* Role Banner */}
+        <div className={`flex items-center gap-3 rounded-2xl p-4 ${cfg.theme.headerBg} text-white shadow-lg overflow-hidden relative`}>
+          {/* Background watermark logo */}
+          {isStandalone && (
+            <img
+              src={appLogo}
+              alt=""
+              className="absolute right-0 top-0 h-full w-auto opacity-10 object-contain pointer-events-none"
+            />
+          )}
           <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
             <Icon size={22} />
           </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white/70">Signing in as</p>
-            <p className="text-lg font-black">{cfg.emoji} {cfg.label} Portal</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Signing in as</p>
+            <p className="text-base font-black truncate">{cfg.emoji} {cfg.label} Portal</p>
           </div>
-          <div className="ml-auto">
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="text-xs font-semibold text-white/70 hover:text-white underline transition"
-            >
-              Change role
-            </button>
-          </div>
+          {/* Change role only shown in web combined mode */}
+          {!isStandalone && (
+            <div className="ml-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                className="text-xs font-semibold text-white/70 hover:text-white underline transition"
+              >
+                Change role
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -583,9 +622,9 @@ const LoginPage = () => {
                 disabled={loading}
                 className={`w-full py-3.5 text-center justify-center text-sm font-bold ${cfg.theme.button} text-white rounded-2xl flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {loading ? "Signing In..." : (
-                  <>Sign In <ArrowRight size={16} /></>
-                )}
+                {loading
+                  ? (serverWaking ? "⏳ Server waking up..." : "Signing In...")
+                  : <><span>Sign In</span> <ArrowRight size={16} /></>}
               </button>
 
               <div className="text-center text-sm text-slate-600">
@@ -665,7 +704,11 @@ const LoginPage = () => {
             disabled={loading}
             className="w-full py-4 text-center justify-center"
           >
-            {loading ? "Signing In..." : "Sign In as Admin"}
+            {loading ? (
+              <span className="flex items-center gap-2 justify-center">
+                {serverWaking ? "⏳ Server waking up... please wait" : "Signing In..."}
+              </span>
+            ) : "Sign In as Admin"}
           </KSButton>
         </form>
       )}

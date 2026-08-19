@@ -60,7 +60,7 @@ const register = async (req, res) => {
       token = jwt.sign(
         { id: newUser.id, email: newUser.email, role: newUser.role },
         process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: "30d" }
       );
       message = "Registration successful.";
     }
@@ -94,8 +94,12 @@ const login = async (req, res) => {
   }
 
   try {
-    // Fetch user
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+    // Fetch only the columns needed for login — avoids loading large JSONB document blobs (aadhar/selfie).
+    // PERF TIP: Ensure an index exists: CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+    const result = await db.query(
+      "SELECT id, name, email, phone, role, password, status, extra_info FROM users WHERE email = $1",
+      [email.toLowerCase()]
+    );
     if (result.rows.length === 0) {
       return res.status(400).json({ message: "Invalid email or password." });
     }
@@ -125,7 +129,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     res.json({
@@ -182,20 +186,22 @@ const getProfile = async (req, res) => {
 
 // Update profile
 const updateProfile = async (req, res) => {
-  const { name, phone, extraInfo } = req.body;
+  const { name, phone, extraInfo, documents } = req.body;
 
   if (!name || !phone) {
     return res.status(400).json({ message: "Name and phone fields are required." });
   }
 
   try {
+    const docQuery = documents ? JSON.stringify(documents) : null;
     const updateQuery = `
       UPDATE users 
-      SET name = $1, phone = $2, extra_info = $3 
+      SET name = $1, phone = $2, extra_info = $3,
+          documents = CASE WHEN $5::jsonb IS NOT NULL THEN COALESCE(documents, '{}'::jsonb) || $5::jsonb ELSE documents END
       WHERE id = $4 
-      RETURNING id, name, email, phone, role, extra_info, status
+      RETURNING id, name, email, phone, role, extra_info, status, documents
     `;
-    const result = await db.query(updateQuery, [name, phone, extraInfo || "", req.user.id]);
+    const result = await db.query(updateQuery, [name, phone, extraInfo || "", req.user.id, docQuery]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "User not found." });
@@ -211,7 +217,8 @@ const updateProfile = async (req, res) => {
         phone: updatedUser.phone,
         role: updatedUser.role,
         extraInfo: updatedUser.extra_info,
-        status: updatedUser.status
+        status: updatedUser.status,
+        documents: updatedUser.documents
       }
     });
 
@@ -222,7 +229,20 @@ const updateProfile = async (req, res) => {
 };
 
 const crypto = require("crypto");
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
+
+// ── Build reusable Gmail SMTP transporter ────────────────────────────────────
+// Requires GMAIL_USER and GMAIL_APP_PASSWORD in .env
+// Generate an App Password at: https://myaccount.google.com/apppasswords
+function createMailTransporter() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
 
 // Forgot Password
 const forgotPassword = async (req, res) => {
@@ -235,6 +255,7 @@ const forgotPassword = async (req, res) => {
   try {
     const result = await db.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
     if (result.rows.length === 0) {
+      // Generic response to prevent email enumeration
       return res.json({ message: "If that email is registered, a reset link has been sent." });
     }
 
@@ -250,10 +271,14 @@ const forgotPassword = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    // Dev mode fallback — if no Resend key set
-    if (!process.env.RESEND_API_KEY) {
-      console.warn("⚠️  RESEND_API_KEY not set. Running in dev mode.");
-      return res.json({ message: "Dev Mode: Email not configured.", devResetToken: resetToken });
+    // ── Dev mode: no Gmail credentials configured ────────────────────────
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      console.warn("⚠️  GMAIL_USER / GMAIL_APP_PASSWORD not set.");
+      console.log(`[DEV] Password reset link for ${email}: ${resetUrl}`);
+      return res.json({
+        message: "Dev Mode: Gmail not configured. Reset link printed to server console.",
+        devResetToken: resetToken,
+      });
     }
 
     const htmlBody = `
@@ -299,23 +324,20 @@ const forgotPassword = async (req, res) => {
 </body>
 </html>`;
 
+    // ── Send via Gmail SMTP (Nodemailer) ─────────────────────────────────
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const { error } = await resend.emails.send({
-        from: "KisanSeeva <onboarding@resend.dev>",
+      const transporter = createMailTransporter();
+      await transporter.sendMail({
+        from: `"KisanSeeva 🌾" <${process.env.GMAIL_USER}>`,
         to: email,
         subject: "🔐 Reset Your KisanSeeva Password",
         html: htmlBody,
       });
-      if (error) {
-        console.error("❌ Resend error:", error);
-        return res.status(500).json({ message: "Failed to send email.", error: error.message });
-      }
-      console.log(`✅ Password reset email sent to ${email}`);
+      console.log(`✅ Password reset email sent via Gmail to ${email}`);
       res.json({ message: "Password reset link sent to your email." });
     } catch (emailError) {
-      console.error("❌ Email send failed:", emailError.message);
-      res.status(500).json({ message: "Failed to send email.", error: emailError.message });
+      console.error("❌ Gmail email send failed:", emailError.message);
+      res.status(500).json({ message: "Failed to send email. Please try again.", error: emailError.message });
     }
 
   } catch (error) {
@@ -323,7 +345,6 @@ const forgotPassword = async (req, res) => {
     res.status(500).json({ message: "Server error processing request." });
   }
 };
-
 
 
 
@@ -538,7 +559,7 @@ const verifyOtp = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     res.json({

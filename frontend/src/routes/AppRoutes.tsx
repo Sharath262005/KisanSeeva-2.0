@@ -1,4 +1,6 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 // Landing Page
 import LandingPage from "../pages/landing/LandingPage";
@@ -37,11 +39,59 @@ import SurveyResponsePage from "../pages/shared/SurveyResponsePage";
 import ComplaintPage from "../pages/shared/ComplaintPage";
 import AdminComplaintsPage from "../pages/admin/AdminComplaintsPage";
 
+// Mobile Launcher Page
+import MobileRoleSelectorPage from "../pages/auth/MobileRoleSelectorPage";
+
+function RootPage() {
+  const { user, loading } = useAuth();
+  const env = (import.meta as any).env || {};
+  const appMode = env.VITE_APP_MODE || env.MODE;
+
+  // ── STEP 1: Always wait for session restore from @capacitor/preferences ──
+  // This MUST happen before any navigation decision. Without this wait, the app
+  // renders before the token is loaded from storage and always redirects to login.
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+        <Loader2 className="animate-spin text-green-700" size={40} />
+      </div>
+    );
+  }
+
+  // ── STEP 2: If user is already logged in, go straight to their dashboard ──
+  // This applies to ALL modes (standalone farmer/provider/admin or unified).
+  // User stays logged in until they explicitly press Logout.
+  if (user) {
+    if (user.role === "farmer") return <Navigate to="/farmer" replace />;
+    if (user.role === "provider") return <Navigate to="/provider" replace />;
+    if (user.role === "admin") return <Navigate to="/admin" replace />;
+  }
+
+  // ── STEP 3: No active session — decide where to send the user ──
+
+  // Standalone APK mode (farmer/provider/admin separate apps) → role-specific login
+  if (appMode === "farmer") return <Navigate to="/login?role=farmer&standalone=true" replace />;
+  if (appMode === "provider") return <Navigate to="/login?role=provider&standalone=true" replace />;
+  if (appMode === "admin") return <Navigate to="/login?role=admin&standalone=true" replace />;
+
+  // Unified APK — show role selector on mobile, landing page on desktop
+  const isCapacitorNative = typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.());
+  const isMobileScreen = typeof window !== "undefined" && window.innerWidth < 768;
+
+  if (isCapacitorNative || isMobileScreen) {
+    return <MobileRoleSelectorPage />;
+  }
+
+  return <LandingPage />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<RootPage />} />
+      <Route path="/web" element={<LandingPage />} />
+      <Route path="/app-launcher" element={<MobileRoleSelectorPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/pending-approval" element={<PendingApprovalPage />} />

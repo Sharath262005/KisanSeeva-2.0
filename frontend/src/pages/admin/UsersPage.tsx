@@ -213,8 +213,8 @@ const UsersPage = () => {
             <p className="font-semibold">No users found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[700px] text-left border-collapse">
               <thead>
                 <tr className="text-slate-400 font-semibold text-sm border-b border-slate-800">
                   <th className="px-6 py-4">ID</th>

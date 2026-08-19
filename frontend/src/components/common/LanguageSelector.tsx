@@ -23,10 +23,10 @@ export default function LanguageSelector({ variant = "default" }: LanguageSelect
 
   const buttonStyle =
     variant === "dark"
-      ? "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
+      ? "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 text-xs px-2 py-1 sm:px-2.5 sm:py-1.5"
       : variant === "compact"
-      ? "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-50 text-xs px-2.5 py-1.5"
-      : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 px-3 py-2 text-sm";
+      ? "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-50 text-xs px-2 py-1"
+      : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-semibold";
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>

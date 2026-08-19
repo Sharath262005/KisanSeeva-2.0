@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Tractor, Star, CheckCircle2, XCircle, Clock, MessageSquare, CreditCard } from "lucide-react";
+import { Tractor, Star, CheckCircle2, XCircle, Clock, MessageSquare, CreditCard, Timer, Play, Square } from "lucide-react";
 import { KSCard, KSBadge, KSButton, KSModal } from "../../components/ui";
 import LiveTrackingModal from "../../components/dashboard/LiveTrackingModal";
 import PaymentModal from "../../components/dashboard/PaymentModal";
@@ -53,8 +53,8 @@ const MyBookings = () => {
   const [payBookingId, setPayBookingId] = useState<number | null>(null);
   const [payBookingPrice, setPayBookingPrice] = useState(0);
 
-  // Timer loading state
-  const [timerActionLoading, setTimerActionLoading] = useState<number | null>(null);
+  // Timer action loading (kept for type safety but not used for farmer controls)
+  const [_timerActionLoading, _setTimerActionLoading] = useState<number | null>(null);
 
   const fetchBookings = async () => {
     try {
@@ -89,31 +89,6 @@ const MyBookings = () => {
     }
   };
 
-  const handleStartTimer = async (bookingId: number) => {
-    setTimerActionLoading(bookingId);
-    try {
-      await API.put(`/bookings/${bookingId}/start-timer`);
-      fetchBookings();
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to start timer.");
-    } finally {
-      setTimerActionLoading(null);
-    }
-  };
-
-  const handleStopTimer = async (bookingId: number) => {
-    if (!window.confirm("Are you sure the work is finished? This will stop the timer and calculate the final bill.")) return;
-    setTimerActionLoading(bookingId);
-    try {
-      const res = await API.put(`/bookings/${bookingId}/stop-timer`);
-      alert(`Work completed! Final bill: ₹${parseFloat(res.data.finalPrice).toLocaleString("en-IN")} (${res.data.actualHours} hrs actual time).`);
-      fetchBookings();
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to stop timer.");
-    } finally {
-      setTimerActionLoading(null);
-    }
-  };
 
 
   const openRatingModal = (id: number) => {
@@ -206,51 +181,58 @@ const MyBookings = () => {
 
       {/* Bookings Grid */}
       {filteredBookings.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-lg p-12 text-center text-slate-400">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-lg p-8 sm:p-12 text-center text-slate-400">
           {t("noBookingsFound")}
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-4 sm:gap-6">
           {filteredBookings.map((b) => (
-            <KSCard key={b.id} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="p-3 bg-green-50 text-green-700 rounded-2xl shrink-0">
-                  <Tractor size={32} />
+            <KSCard key={b.id} className="p-4 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 max-w-full overflow-hidden">
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0 w-full">
+                <div className="p-2.5 sm:p-3 bg-green-50 text-green-700 rounded-2xl shrink-0">
+                  <Tractor size={24} className="sm:w-8 sm:h-8" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-bold text-slate-800 text-lg">{b.service_name}</h3>
-                    <span className="text-sm font-semibold text-slate-400">(KS-{b.id})</span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-extrabold text-slate-900 text-base sm:text-lg truncate max-w-[200px] sm:max-w-xs">{b.service_name}</h3>
+                    <span className="text-xs font-bold text-slate-400">#KS-{b.id}</span>
                   </div>
-                  <p className="text-sm text-slate-500 mt-0.5">
-                    {t("provider")}: <span className="font-semibold text-slate-700">{b.provider_name}</span> ({b.provider_phone})
+                  <p className="text-xs sm:text-sm text-slate-600 truncate">
+                    {t("provider")}: <span className="font-bold text-slate-800">{b.provider_name}</span> ({b.provider_phone})
                   </p>
                   {(b.status === 'confirmed' || b.status === 'completed') && (
                     <button
                       onClick={() => setViewProfileId(b.provider_user_id)}
-                      className="text-xs text-blue-600 underline hover:text-blue-800 font-semibold"
+                      className="text-xs text-blue-600 underline hover:text-blue-800 font-semibold cursor-pointer"
                     >
                       {t("viewProfile")} →
                     </button>
                   )}
-                  <p className="text-xs text-slate-400 mt-1">
-                    Location: <span className="text-slate-600">{b.location}</span>
+                  <p className="text-xs text-slate-400 truncate">
+                    📍 Location: <span className="text-slate-600">{b.location}</span>
                   </p>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
-                    <span>Scheduled: <strong className="text-slate-700">{formatSQLDate(b.booking_date)}</strong></span>
-                    <span>Billing Mode: <strong className={b.pricing_model === "fixed" ? "text-purple-600" : "text-blue-600"}>{b.pricing_model === "fixed" ? "🔧 Fixed Service Charge" : "⏱️ Hourly Timer"}</strong></span>
+                  
+                  {/* Detail pills wrap cleanly on mobile */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] sm:text-xs">
+                    <span className="bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700 font-medium">📅 {formatSQLDate(b.booking_date)}</span>
+                    <span className={`px-2.5 py-1 rounded-lg font-bold ${b.pricing_model === "fixed" ? "bg-purple-50 text-purple-700" : "bg-blue-50 text-blue-700"}`}>
+                      {b.pricing_model === "fixed" ? "🔧 Fixed Rate" : "⏱️ Hourly Timer"}
+                    </span>
                     {b.actual_hours ? (
-                      <span>Actual Time: <strong className="text-green-700 font-bold">{b.actual_hours} hrs</strong></span>
+                      <span className="bg-emerald-50 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">Actual: {b.actual_hours} hrs</span>
                     ) : (
-                      <span>Estimated: <strong className="text-slate-700">{b.hours_required} hrs</strong></span>
+                      <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg">Est: {b.hours_required} hrs</span>
                     )}
-                    <span>Total Cost: <strong className="text-slate-800 text-sm font-extrabold">₹{parseFloat(b.total_price).toLocaleString("en-IN")}</strong></span>
+                    <span className="bg-emerald-100/80 text-emerald-900 font-black px-2.5 py-1 rounded-lg text-xs">
+                      Total: ₹{parseFloat(b.total_price).toLocaleString("en-IN")}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto justify-end border-t md:border-t-0 pt-4 md:pt-0">
-                <div className="self-start sm:self-center">
+              {/* Status and Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
+                <div className="flex items-center gap-2 justify-between sm:justify-start">
                   <KSBadge
                     variant={
                       b.status === "completed"
@@ -268,89 +250,92 @@ const MyBookings = () => {
 
                   {/* Payment Badge */}
                   {(b.status === "completed" || b.status === "confirmed") && (
-                    <div className="mt-1.5 sm:mt-0 sm:ml-2 inline-block">
-                      <KSBadge variant={b.payment_status === "paid" ? "success" : "danger"}>
-                        <CreditCard size={12} className="mr-1" />
-                        <span>{b.payment_status === "paid" ? "Paid" : "Unpaid"}</span>
-                      </KSBadge>
-                    </div>
+                    <KSBadge variant={b.payment_status === "paid" ? "success" : "danger"}>
+                      <CreditCard size={12} className="mr-1" />
+                      <span>{b.payment_status === "paid" ? "Paid" : "Unpaid"}</span>
+                    </KSBadge>
                   )}
                 </div>
 
-                {/* Cancel Action */}
-                {(b.status === "pending" || b.status === "confirmed") && (
-                  <KSButton
-                    variant="outline"
-                    className="px-4 py-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                    disabled={actionLoading === b.id}
-                    onClick={() => handleCancel(b.id)}
-                  >
-                    {actionLoading === b.id ? "Cancelling..." : t("cancelled") + " ✕"}
-                  </KSButton>
-                )}
+                {/* Mobile Button Row / Stack */}
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                  {/* Cancel Action */}
+                  {(b.status === "pending" || b.status === "confirmed") && (
+                    <KSButton
+                      variant="outline"
+                      className="flex-1 sm:flex-none px-3 py-2 text-xs text-red-600 border-red-200 hover:bg-red-50 justify-center"
+                      disabled={actionLoading === b.id}
+                      onClick={() => handleCancel(b.id)}
+                    >
+                      {actionLoading === b.id ? "Cancelling..." : t("cancelled") + " ✕"}
+                    </KSButton>
+                  )}
 
-                {/* Track Action */}
-                {b.status === "confirmed" && (
-                  <KSButton
-                    className="px-4 py-2 text-xs bg-blue-600 hover:bg-blue-700 border-none"
-                    onClick={() => setTrackingId(b.id)}
-                  >
-                    Track Provider
-                  </KSButton>
-                )}
+                  {/* Track Action */}
+                  {b.status === "confirmed" && (
+                    <KSButton
+                      className="flex-1 sm:flex-none px-4 py-2 text-xs bg-blue-600 hover:bg-blue-700 border-none font-bold justify-center cursor-pointer"
+                      onClick={() => setTrackingId(b.id)}
+                    >
+                      📍 Track Driver / GPS
+                    </KSButton>
+                  )}
 
-                {/* Work Timer Action (Only for Farmer & Confirmed Bookings) */}
-                {b.status === "confirmed" && b.timer_status !== "running" && b.pricing_model !== "fixed" && (
-                  <KSButton
-                    className="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 border-none flex items-center gap-1 animate-pulse"
-                    disabled={timerActionLoading === b.id}
-                    onClick={() => handleStartTimer(b.id)}
-                  >
-                    ⏱️ Start Work Timer
-                  </KSButton>
-                )}
+                  {/* READ-ONLY Timer Status (farmers cannot control the timer — provider does) */}
+                  {b.status === "confirmed" && b.pricing_model !== "fixed" && (
+                    <div className="flex-1 sm:flex-none">
+                      {b.timer_status === "running" ? (
+                        <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700 px-3 py-2 rounded-xl">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                          <Timer size={12} className="text-emerald-600 shrink-0" />
+                          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">Provider is working...</span>
+                        </div>
+                      ) : b.timer_status === "stopped" ? (
+                        <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-700 px-3 py-2 rounded-xl">
+                          <Square size={12} className="text-blue-600 fill-blue-600 shrink-0" />
+                          <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400">Work finished by provider</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-3 py-2 rounded-xl">
+                          <Play size={12} className="text-slate-400 shrink-0" />
+                          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Awaiting provider to start work</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                {b.status === "confirmed" && b.timer_status === "running" && (
-                  <KSButton
-                    className="px-4 py-2 text-xs bg-red-600 hover:bg-red-700 border-none flex items-center gap-1 font-bold animate-bounce"
-                    disabled={timerActionLoading === b.id}
-                    onClick={() => handleStopTimer(b.id)}
-                  >
-                    🛑 Stop Timer & Complete Work
-                  </KSButton>
-                )}
+                  {/* Rate Action */}
+                  {b.status === "completed" && b.rating === null && (
+                    <KSButton variant="outline" className="flex-1 sm:flex-none px-3 py-2 text-xs justify-center" onClick={() => openRatingModal(b.id)}>
+                      ⭐ Rate Provider
+                    </KSButton>
+                  )}
 
-                {/* Rate Action */}
-                {b.status === "completed" && b.rating === null && (
-                  <KSButton variant="outline" className="px-4 py-2 text-xs" onClick={() => openRatingModal(b.id)}>
-                    ⭐ Rate {t("provider")}
-                  </KSButton>
-                )}
-
-                {/* Pay Action */}
-                {(b.status === "completed" || b.status === "confirmed") && b.payment_status !== "paid" && (
-                  <KSButton 
-                    className="px-4 py-2 text-xs bg-green-600 hover:bg-green-700 border-none flex items-center gap-1" 
-                    onClick={() => {
-                      setPayBookingId(b.id);
-                      setPayBookingPrice(parseFloat(b.total_price));
-                      setIsPayOpen(true);
-                    }}
-                  >
-                    <CreditCard size={12} />
-                    Pay Now
-                  </KSButton>
-                )}
+                  {/* Pay Action */}
+                  {(b.status === "completed" || b.status === "confirmed") && b.payment_status !== "paid" && (
+                    <KSButton 
+                      className="flex-1 sm:flex-none px-4 py-2 text-xs bg-green-600 hover:bg-green-700 border-none flex items-center justify-center gap-1 font-bold" 
+                      onClick={() => {
+                        setPayBookingId(b.id);
+                        setPayBookingPrice(parseFloat(b.total_price));
+                        setIsPayOpen(true);
+                      }}
+                    >
+                      <CreditCard size={12} />
+                      Pay Now
+                    </KSButton>
+                  )}
+                </div>
 
                 {/* Rating View */}
                 {b.status === "completed" && b.rating !== null && (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-start sm:items-end gap-1 mt-1 sm:mt-0">
                     <div className="flex items-center gap-0.5 text-yellow-500">
                       {[...Array(b.rating)].map((_, i) => (
-                        <Star key={i} size={16} fill="currentColor" />
+                        <Star key={i} size={14} fill="currentColor" />
                       ))}
                       {[...Array(5 - (b.rating || 0))].map((_, i) => (
-                        <Star key={i} size={16} className="text-slate-200" />
+                        <Star key={i} size={14} className="text-slate-200" />
                       ))}
                     </div>
                     {b.feedback && (

@@ -6,13 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:farmer": "tsc -b && vite build --mode farmer",
+    "build:provider": "tsc -b && vite build --mode provider",
+    "build:admin": "tsc -b && vite build --mode admin",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/local-notifications": "^8.3.0",
+    "@capacitor/preferences": "^8.0.1",
     "@tailwindcss/vite": "^4.3.2",
     "@vis.gl/react-google-maps": "^1.9.0",
     "axios": "^1.18.1",

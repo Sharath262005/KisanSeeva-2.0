@@ -1,6 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { Bell, Check, Loader2 } from "lucide-react";
+﻿import { useState, useEffect, useRef } from "react";
+import { Bell, Check, Loader2, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
+import { scheduleLocalNotification, getRouteFromMessage } from "../../services/notificationService";
 
 interface Notification {
   id: number;
@@ -14,12 +17,32 @@ const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const seenIdsRef = useRef<Set<number>>(new Set());
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const userRole = user?.role ?? "farmer";
 
   const fetchNotifications = async () => {
     try {
       setLoading(true);
       const res = await API.get("/notifications");
-      setNotifications(res.data.notifications);
+      const incoming: Notification[] = res.data.notifications;
+
+      // Detect genuinely new unread notifications (not seen before)
+      const newUnread = incoming.filter(
+        (n) => !n.is_read && !seenIdsRef.current.has(n.id)
+      );
+      for (const n of newUnread) {
+        // Fire OS local notification for each new unread item
+        scheduleLocalNotification("KisanSeeva", n.message, n.id).catch(() => {});
+        seenIdsRef.current.add(n.id);
+      }
+      // Mark existing as seen so we don't fire OS notif again on next poll
+      incoming.forEach((n) => {
+        if (n.is_read) seenIdsRef.current.add(n.id);
+      });
+
+      setNotifications(incoming);
     } catch (err) {
       console.error("Failed to fetch notifications", err);
     } finally {
@@ -29,7 +52,6 @@ const NotificationDropdown = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -65,6 +87,20 @@ const NotificationDropdown = () => {
     }
   };
 
+  const handleNotificationClick = async (notif: Notification) => {
+    // Mark as read
+    if (!notif.is_read) {
+      handleMarkAsRead(notif.id);
+    }
+    // Close dropdown
+    setIsOpen(false);
+    // Deep-link to relevant page
+    const route = getRouteFromMessage(notif.message, userRole);
+    if (route) {
+      navigate(route);
+    }
+  };
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
@@ -72,6 +108,7 @@ const NotificationDropdown = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 relative focus:outline-none focus:ring-2 focus:ring-green-500"
+        aria-label="Notifications"
       >
         <Bell size={20} />
         {unreadCount > 0 && (
@@ -94,7 +131,7 @@ const NotificationDropdown = () => {
               </button>
             )}
           </div>
-          
+
           <div className="max-h-80 overflow-y-auto">
             {loading && notifications.length === 0 ? (
               <div className="p-8 flex justify-center text-slate-400">
@@ -106,30 +143,39 @@ const NotificationDropdown = () => {
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`p-4 transition ${
-                      notif.is_read ? "bg-white opacity-60" : "bg-blue-50/50"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start gap-3">
-                      <p className="text-sm text-slate-700 mt-0.5">{notif.message}</p>
-                      {!notif.is_read && (
-                        <button
-                          onClick={() => handleMarkAsRead(notif.id)}
-                          className="text-slate-400 hover:text-green-600 shrink-0"
-                          title="Mark as read"
-                        >
-                          <Check size={16} />
-                        </button>
-                      )}
+                {notifications.map((notif) => {
+                  const route = getRouteFromMessage(notif.message, userRole);
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className={`p-4 transition cursor-pointer hover:bg-slate-50 active:bg-slate-100 ${
+                        notif.is_read ? "bg-white opacity-70" : "bg-blue-50/60"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <p className="text-sm text-slate-700 mt-0.5 flex-1">{notif.message}</p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {route && (
+                            <ArrowRight size={14} className="text-slate-400" />
+                          )}
+                          {!notif.is_read && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notif.id); }}
+                              className="text-slate-400 hover:text-green-600"
+                              title="Mark as read"
+                            >
+                              <Check size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase mt-2 block">
+                        {new Date(notif.created_at).toLocaleString()}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase mt-2 block">
-                      {new Date(notif.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

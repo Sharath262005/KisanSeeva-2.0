@@ -48,10 +48,21 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({ onCapture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
 
+  // ── Detect native Capacitor (Android/iOS) ──────────────────────────────────
+  // getUserMedia() requires HTTPS or localhost. Capacitor runs on file:// which
+  // is neither — so the camera is always blocked on Android APKs via getUserMedia.
+  // Solution: on native, use <input type="file" capture="user"> which opens the
+  // Android native camera app directly and always works.
+  const isNativePlatform = typeof window !== "undefined" &&
+    Boolean((window as any).Capacitor?.isNativePlatform?.());
+
+  // ── Web camera (works on HTTPS in a browser) ───────────────────────────────
   const startCamera = useCallback(async () => {
+    if (isNativePlatform) return; // skip — native uses file input instead
     setCameraError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -65,15 +76,31 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({ onCapture }) => {
     } catch {
       setCameraError("Camera access denied. Please allow camera access in your browser settings.");
     }
-  }, []);
+  }, [isNativePlatform]);
 
   useEffect(() => {
-    startCamera();
+    if (!isNativePlatform) startCamera();
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [startCamera]);
+  }, [startCamera, isNativePlatform]);
 
+  // ── Native Android: handle image selected from native camera ───────────────
+  const handleNativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      // Convert dataUrl to Blob for upload FormData
+      fetch(dataUrl)
+        .then((r) => r.blob())
+        .then((blob) => onCapture(blob, dataUrl));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ── Web: capture frame from live video stream ──────────────────────────────
   const capture = () => {
     if (!videoRef.current || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext("2d")!;
@@ -88,6 +115,40 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({ onCapture }) => {
     }, "image/jpeg", 0.92);
   };
 
+  // ── NATIVE ANDROID UI — opens native camera app via file input ─────────────
+  if (isNativePlatform) {
+    return (
+      <div className="space-y-3">
+        {/* Hidden native file input with capture="user" (front/selfie camera) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          className="hidden"
+          onChange={handleNativeFileSelect}
+        />
+        {/* Tap area to open camera */}
+        <div
+          className="rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 aspect-square max-h-56 mx-auto flex flex-col items-center justify-center gap-3 cursor-pointer active:scale-95 transition"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Camera size={44} className="text-slate-400" />
+          <p className="text-sm text-slate-500 font-bold">Tap to Open Front Camera</p>
+          <p className="text-xs text-slate-400 text-center px-4">Your front (selfie) camera will open</p>
+        </div>
+        <KSButton
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full py-3 justify-center flex items-center gap-2"
+        >
+          <Camera size={18} /> Open Camera & Take Selfie
+        </KSButton>
+      </div>
+    );
+  }
+
+  // ── WEB BROWSER UI — getUserMedia live preview ─────────────────────────────
   if (cameraError) {
     return (
       <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-600 flex items-start gap-2">
@@ -276,7 +337,10 @@ const RegisterPage = () => {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("token") || "";
+      // FIX E: Use correct token key — 'ks_auth_token' not 'token'
+      // The wrong key caused every upload request to go out without Authorization
+      // header, resulting in a silent 401 on the upload-documents endpoint.
+      const token = localStorage.getItem("ks_auth_token") || "";
       const baseUrl = (API.defaults.baseURL || "").replace("/api", "");
       const res = await fetch(`${baseUrl}/api/auth/upload-documents`, {
         method: "POST",
