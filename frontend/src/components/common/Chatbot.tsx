@@ -883,71 +883,85 @@ export default function Chatbot() {
       {isOpen && (
         <div
           className="fixed z-[60] flex flex-col bg-white font-['Plus_Jakarta_Sans',sans-serif] transition-all duration-300
-            md:bottom-4 md:right-4 md:w-full md:max-w-sm md:rounded-3xl md:shadow-2xl md:overflow-hidden md:border md:border-emerald-500/20
-            inset-0 md:inset-auto md:h-auto"
-          style={{ height: "100dvh", maxHeight: "100dvh" }}
+            md:bottom-4 md:right-4 md:w-[410px] md:max-w-[94vw] md:h-[620px] md:max-h-[85vh] md:rounded-3xl md:shadow-2xl md:overflow-hidden md:border md:border-emerald-500/20
+            inset-0 md:inset-auto"
         >
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-safe py-3.5 bg-gradient-to-r from-emerald-800 via-emerald-900 to-slate-900 text-white shrink-0 shadow-md">
-            <div className="flex items-center gap-3">
-              {/* KisanSeeva Logo badge */}
-              <div className="relative w-10 h-10 rounded-2xl bg-white p-1 border border-emerald-400/30 flex items-center justify-center overflow-hidden shadow-sm">
-                <img src="/logo.png" alt="KisanSeeva Logo" className="w-full h-full object-contain" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-slate-900" />
+          {/* ══ Header ══ */}
+          <div className="bg-gradient-to-r from-emerald-800 via-emerald-900 to-slate-900 text-white shrink-0 shadow-md">
+            {/* Top Bar: Title + Actions */}
+            <div className="flex items-center justify-between px-3.5 pt-safe py-2.5 border-b border-white/10">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {/* KisanSeeva Logo badge */}
+                <div className="relative w-8 h-8 rounded-xl bg-white p-0.5 border border-emerald-400/30 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                  <img src="/logo.png" alt="KisanSeeva Logo" className="w-full h-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-extrabold text-sm tracking-tight text-white truncate">
+                      Seed AI
+                    </p>
+                    <span className="text-[10px] bg-emerald-500/25 text-emerald-300 font-bold px-1.5 py-0.2 rounded-md border border-emerald-400/20">
+                      🌱
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="font-extrabold text-sm tracking-tight flex items-center gap-1.5 text-white">
-                  Seed AI <span className="text-xs bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-400/20">🌱</span>
-                </p>
-                <p className="text-[11px] text-emerald-200/80 font-medium mt-0.5 flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${backendStatus === 'online' ? 'bg-emerald-400 animate-pulse' : backendStatus === 'offline' ? 'bg-red-400' : 'bg-amber-400 animate-pulse'}`} />
-                  {backendStatus === 'online' ? 'AI Live' : backendStatus === 'offline' ? 'Offline Mode' : 'Connecting...'} ·
-                  {userRole === "provider"
-                    ? <span className="flex items-center gap-1"><img src="/provider-logo.png" alt="Provider" className="w-3.5 h-3.5 object-contain rounded" /> Provider</span>
-                    : <span className="flex items-center gap-1"><img src="/farmer-logo.png" alt="Farmer" className="w-3.5 h-3.5 object-contain rounded" /> Farmer</span>
-                  }
-                  · {currentLanguage.nativeName}
-                </p>
+
+              {/* Header Action Buttons */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={startLiveVoice}
+                  className="flex items-center gap-1 bg-emerald-500/30 hover:bg-emerald-500/50 border border-emerald-400/40 text-white text-[11px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+                  title="Start hands-free voice call"
+                >
+                  <Phone size={11} className="text-emerald-300 animate-pulse" /> Call
+                </button>
+                <button
+                  onClick={toggleMute}
+                  className={`p-1.5 rounded-lg transition cursor-pointer flex items-center justify-center ${
+                    isMuted 
+                      ? "bg-red-500/30 text-red-200 border border-red-400/40 hover:bg-red-500/50" 
+                      : "hover:bg-white/10 text-emerald-200 hover:text-white"
+                  }`}
+                  title={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
+                  aria-label={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
+                >
+                  {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                </button>
+                <button
+                  onClick={clearChat}
+                  className="p-1.5 hover:bg-white/10 rounded-lg transition cursor-pointer text-emerald-200 hover:text-white"
+                  title="Clear conversation"
+                >
+                  <RefreshCw size={14} />
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 hover:bg-white/10 rounded-lg transition cursor-pointer text-emerald-200 hover:text-white"
+                  title="Close Chat"
+                  aria-label="Close Chat"
+                >
+                  <X size={17} />
+                </button>
               </div>
             </div>
 
-            {/* Header Actions */}
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={startLiveVoice}
-                className="flex items-center gap-1 bg-emerald-600/40 hover:bg-emerald-600/60 border border-emerald-400/30 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95"
-                title="Start hands-free voice call"
-              >
-                <Phone size={13} className="text-emerald-300 animate-pulse" /> Call
-              </button>
-              <button
-                onClick={toggleMute}
-                className={`p-1.5 rounded-xl transition cursor-pointer flex items-center justify-center ${
-                  isMuted 
-                    ? "bg-red-500/30 text-red-200 border border-red-400/40 hover:bg-red-500/50" 
-                    : "hover:bg-white/10 text-emerald-200 hover:text-white"
-                }`}
-                title={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
-                aria-label={isMuted ? "Unmute Seed Voice" : "Mute Seed Voice"}
-              >
-                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
-              <button
-                onClick={clearChat}
-                className="p-1.5 hover:bg-white/10 rounded-xl transition cursor-pointer text-emerald-200 hover:text-white"
-                title="Clear conversation"
-              >
-                <RefreshCw size={15} />
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-white/10 rounded-xl transition cursor-pointer text-emerald-200 hover:text-white"
-                title="Close Chat"
-                aria-label="Close Chat"
-              >
-                <X size={19} />
-              </button>
+            {/* Sub-bar: Status & Badges Strip */}
+            <div className="px-3.5 py-1.5 flex items-center justify-between text-[11px] text-emerald-200/90 bg-black/15">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${backendStatus === 'online' ? 'bg-emerald-400 animate-pulse' : backendStatus === 'offline' ? 'bg-red-400' : 'bg-amber-400 animate-pulse'}`} />
+                <span className="font-semibold text-white/90">
+                  {backendStatus === 'online' ? 'Online' : backendStatus === 'offline' ? 'Offline' : 'Connecting...'}
+                </span>
+                <span className="text-white/40">·</span>
+                <span className="text-emerald-300 font-medium">
+                  {userRole === "provider" ? "🚜 Provider" : "🌾 Farmer"}
+                </span>
+              </div>
+              <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/80 shrink-0 font-semibold">
+                🌐 {currentLanguage.nativeName}
+              </span>
             </div>
           </div>
 
