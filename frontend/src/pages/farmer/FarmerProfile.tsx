@@ -1,11 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { User, Sprout, ShieldCheck, Camera, LogOut, Settings, Globe, Sun, Moon, Monitor } from "lucide-react";
-import { KSCard, KSButton } from "../../components/ui";
+import { User, Sprout, ShieldCheck, Camera, LogOut, Settings, Globe, Sun, Moon, Monitor, ChevronDown } from "lucide-react";
+import { KSBadge } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage, SUPPORTED_LANGUAGES } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+
+const compressImage = (file: File, maxWidth = 500, quality = 0.82): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 const FarmerProfile = () => {
   const { user, updateUserProfile, logout } = useAuth();
@@ -22,31 +57,35 @@ const FarmerProfile = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
-  // Initialize fields on load or user changes
   useEffect(() => {
     if (user) {
       setName(user.name);
       setPhone(user.phone);
       setExtraInfo(user.extraInfo || "");
-      // Always sync selfie from the latest user object
       setSelfie(user.documents?.selfie || null);
     }
   }, [user?.id, user?.documents?.selfie]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image size should be less than 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image size should be less than 10MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setSelfie(reader.result as string);
+    setError("");
+    setImageUploading(true);
+    try {
+      const compressedDataUrl = await compressImage(file, 500, 0.85);
+      setSelfie(compressedDataUrl);
       setImageChanged(true);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setError("Failed to process image. Please try another photo.");
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +104,6 @@ const FarmerProfile = () => {
         extraInfo,
         ...(imageChanged && selfie ? { documents: { selfie } } : {}),
       });
-      // Explicitly sync selfie from server response to guarantee UI update
       if (updatedUser?.documents?.selfie) {
         setSelfie(updatedUser.documents.selfie);
       }
@@ -88,52 +126,60 @@ const FarmerProfile = () => {
     return n.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase();
   };
 
-  const themeOptions: { value: "light" | "dark" | "system"; label: string; icon: typeof Sun }[] = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
-  ];
-
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">{t("myProfile")}</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">{t("editProfile")}</p>
+    <div className="max-w-2xl mx-auto space-y-4 pb-16">
+      {/* ── Page Title ── */}
+      <div className="pb-1">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+          {t("myProfile")}
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{t("editProfile")}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {saved && (
-          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400 p-4 rounded-2xl flex items-center gap-2">
-            <ShieldCheck size={20} />
-            <span className="font-semibold">Profile details updated successfully!</span>
-          </div>
-        )}
+      {/* ── Success / Error Banners ── */}
+      {saved && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-3.5 rounded-2xl flex items-center gap-2 text-sm font-semibold shadow-sm">
+          <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
+          <span>Profile details updated successfully!</span>
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 p-3.5 rounded-2xl text-sm font-semibold shadow-sm">
+          <span>{error}</span>
+        </div>
+      )}
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 p-4 rounded-2xl">
-            <span className="font-semibold">{error}</span>
-          </div>
-        )}
-
-        {/* ── PROFILE PHOTO AVATAR CARD ── */}
-        <KSCard className="flex flex-col items-center sm:flex-row sm:items-center gap-6 bg-gradient-to-r from-emerald-50/70 to-teal-50/70 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-100 dark:border-emerald-800">
-          <div className="relative group">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-slate-700 shadow-md bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-800 dark:text-emerald-300 font-extrabold text-2xl">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* ── PROFILE HEADER CARD ── */}
+        <div
+          className="flex flex-col items-center sm:flex-row sm:items-center gap-5 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
+        >
+          {/* Avatar with camera upload */}
+          <div className="relative group shrink-0">
+            <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-emerald-500 shadow-md bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-black text-2xl"
+              style={{ width: "88px", height: "88px" }}
+            >
               {selfie ? (
-                <img src={selfie} alt="Profile" className="w-full h-full object-cover" />
+                <img
+                  src={selfie}
+                  alt={name || "Profile"}
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <span>{name ? getInitials(name) : "F"}</span>
               )}
             </div>
             <label
-              htmlFor="avatar-upload"
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg cursor-pointer transition active:scale-95"
+              htmlFor="farmer-avatar-upload"
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-md cursor-pointer transition-all duration-150 active:scale-95"
               title="Upload profile picture"
             >
-              <Camera size={16} />
+              <Camera size={15} />
             </label>
             <input
-              id="avatar-upload"
+              id="farmer-avatar-upload"
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
@@ -141,140 +187,181 @@ const FarmerProfile = () => {
             />
           </div>
 
-          <div className="text-center sm:text-left space-y-1">
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white">{name || "Farmer"}</h3>
-            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">🌾 Registered Kisan Account</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Tap the camera icon to select & update your profile picture.</p>
+          {/* Name + badge */}
+          <div className="text-center sm:text-left space-y-1.5 flex-1 min-w-0">
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-100 truncate">
+              {name || "Farmer"}
+            </h3>
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
+                🌾 Registered Kisan Account
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              {imageUploading ? "Processing photo…" : "Tap the camera icon to update your photo"}
+            </p>
           </div>
-        </KSCard>
+        </div>
 
-        <div className="grid gap-6">
-          {/* General Details */}
-          <KSCard className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-              <User className="text-green-700 dark:text-green-400" size={20} />
+        {/* ── FORM FIELDS ── */}
+        <div className="space-y-4">
+          {/* Personal Information */}
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-4"
+            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+          >
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+              <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 rounded-lg">
+                <User className="text-emerald-600 dark:text-emerald-400" size={16} />
+              </span>
               Personal Information
             </h3>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{t("name")}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                {t("name")}
+              </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition"
+                className="w-full px-4 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 bg-[#F5F7F6] dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition text-sm placeholder:text-slate-400"
+                placeholder="Your full name"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{t("phone")}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                {t("phone")}
+              </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition"
+                className="w-full px-4 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 bg-[#F5F7F6] dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition text-sm placeholder:text-slate-400"
+                placeholder="10-digit mobile number"
                 required
               />
             </div>
-          </KSCard>
+          </div>
 
-          {/* Farm Land Details */}
-          <KSCard className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-              <Sprout className="text-green-700 dark:text-green-400" size={20} />
-              Farm & Land Details
+          {/* Farm & Land Details */}
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-4"
+            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+          >
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+              <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 rounded-lg">
+                <Sprout className="text-emerald-600 dark:text-emerald-400" size={16} />
+              </span>
+              Farm &amp; Land Details
             </h3>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Land details and crops cultivated</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Land details and crops cultivated
+              </label>
               <textarea
                 value={extraInfo}
                 onChange={(e) => setExtraInfo(e.target.value)}
                 placeholder="Enter land size (e.g. 5 acres), crop types (e.g. Paddy, Cotton), and location details."
-                rows={4}
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition text-sm"
+                rows={3}
+                className="w-full px-4 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 bg-[#F5F7F6] dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition text-sm placeholder:text-slate-400 resize-none"
               />
             </div>
-          </KSCard>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-slate-400">Verification Status:</span>
+              <KSBadge variant="success" className="text-xs py-0.5 px-2.5">
+                <ShieldCheck size={13} /> Verified Farmer
+              </KSBadge>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+        {/* ── ACTION BUTTONS ── */}
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-1">
+          {/* Sign Out — outline only, no filled background */}
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+            className="w-full sm:w-auto h-10 px-6 rounded-xl text-red-500 bg-transparent border-2 border-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-bold flex items-center justify-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer"
           >
-            <LogOut size={18} />
-            <span>Sign Out of Account</span>
+            <LogOut size={16} />
+            <span>Sign Out</span>
           </button>
 
-          <KSButton type="submit" disabled={submitting} className="w-full sm:w-auto px-8 py-3">
-            {submitting ? "Saving..." : t("save")}
-          </KSButton>
+          {/* Save — solid brand green */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full sm:w-auto h-10 px-7 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 active:scale-95 disabled:opacity-50 cursor-pointer"
+            style={{ boxShadow: "0 2px 8px rgba(5,150,105,0.25)" }}
+          >
+            {submitting ? "Saving…" : t("save")}
+          </button>
         </div>
       </form>
 
       {/* ── APP SETTINGS CARD ── */}
-      <KSCard className="space-y-5 mt-6">
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-          <Settings className="text-green-700 dark:text-green-400" size={20} />
-          App Settings
+      <div
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-4"
+        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+      >
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+          <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 rounded-lg">
+            <Settings className="text-emerald-600 dark:text-emerald-400" size={16} />
+          </span>
+          App Preferences &amp; Settings
         </h3>
 
-        {/* ── DARK / LIGHT MODE TOGGLE ── */}
-        <div>
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
-            {theme === "dark" ? <Moon size={15} className="text-indigo-500" /> : theme === "light" ? <Sun size={15} className="text-amber-500" /> : <Monitor size={15} className="text-slate-500" />}
-            Display Theme
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {themeOptions.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTheme(value)}
-                className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border text-sm font-semibold transition cursor-pointer ${
-                  theme === value
-                    ? "border-green-600 bg-green-50 dark:bg-green-950/50 text-green-800 dark:text-green-300"
-                    : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                }`}
+        <div className="grid sm:grid-cols-2 gap-4">
+          {/* Theme Mode */}
+          <div className="p-3.5 rounded-xl bg-[#F5F7F6] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300 mb-2">
+              {theme === "dark" ? <Moon size={14} className="text-indigo-400" /> : <Sun size={14} className="text-amber-500" />}
+              Brightness &amp; Theme
+            </label>
+            <div className="relative">
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value as any)}
+                className="w-full appearance-none px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition"
               >
-                <Icon size={18} />
-                <span>{label}</span>
-                {theme === value && <Check size={12} className="text-green-600" />}
-              </button>
-            ))}
+                <option value="light">☀️ Light Mode</option>
+                <option value="dark">🌙 Dark Mode</option>
+                <option value="system">🖥️ System Default</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">Adjust screen contrast and dark mode.</p>
           </div>
-        </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
-            <Globe size={15} className="text-green-600" />
-            Display Language
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLanguage(lang.code)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition cursor-pointer ${
-                  currentLanguage.code === lang.code
-                    ? "border-green-600 bg-green-50 dark:bg-green-950/50 text-green-800 dark:text-green-300"
-                    : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                }`}
+          {/* Language */}
+          <div className="p-3.5 rounded-xl bg-[#F5F7F6] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300 mb-2">
+              <Globe size={14} className="text-emerald-600 dark:text-emerald-400" />
+              Display Language
+            </label>
+            <div className="relative">
+              <select
+                value={currentLanguage.code}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full appearance-none px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition"
               >
-                <span>{lang.flag}</span>
-                <span>{lang.nativeName}</span>
-                {currentLanguage.code === lang.code && (
-                  <Check size={14} className="text-green-600 ml-auto shrink-0" />
-                )}
-              </button>
-            ))}
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.nativeName} ({lang.name})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">Choose your preferred regional language.</p>
           </div>
         </div>
-      </KSCard>
+      </div>
     </div>
   );
 };
